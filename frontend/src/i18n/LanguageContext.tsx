@@ -1,0 +1,31 @@
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+
+export type AppLanguage = 'english' | 'gujarati'
+type LanguageContextValue = { language: AppLanguage; setLanguage: (language: AppLanguage) => void; toggleLanguage: () => void; t: (english: string) => string }
+
+const translations: Record<string, string> = {
+  'FIR / Case ID': 'FIR / કેસ ID', 'Updated': 'છેલ્લે અપડેટ', 'Case workspace': 'કેસ વર્કસ્પેસ',
+  'Overview': 'ઝાંખી', 'Analysis': 'વિશ્લેષણ', 'Defense': 'બચાવ પક્ષ', 'Precedents': 'ન્યાયિક પૂર્વનિર્ણયો',
+  'Evidence': 'પુરાવા', 'Timeline': 'સમયરેખા', 'Graph': 'ગ્રાફ', 'Documents': 'દસ્તાવેજો', 'Ask Case': 'કેસને પૂછો',
+  'Case summary': 'કેસનો સારાંશ', 'Verified workspace synthesis': 'ચકાસાયેલ વર્કસ્પેસ સારાંશ',
+  'OCR quality': 'OCR ગુણવત્તા', 'pages': 'પાનાં', 'Native text': 'મૂળ ટેક્સ્ટ', 'Printed OCR': 'પ્રિન્ટેડ OCR',
+  'Review required': 'ચકાસણી જરૂરી', 'Open source review': 'સ્ત્રોતની ચકાસણી ખોલો',
+  'Key people & material': 'મુખ્ય વ્યક્તિઓ અને સામગ્રી', 'Case entities': 'કેસની એન્ટિટીઝ',
+  'Priority review': 'પ્રાથમિક ચકાસણી', 'Source-backed findings': 'સ્ત્રોત આધારિત તારણો',
+  'Human review required before relying on this response.': 'આ જવાબ પર આધાર રાખતા પહેલાં માનવ ચકાસણી જરૂરી છે.',
+  'This system supports evidence review. It does not determine guilt, innocence, or likely case outcome.': 'આ સિસ્ટમ પુરાવાની ચકાસણીમાં મદદ કરે છે. તે દોષિતતા, નિર્દોષતા અથવા કેસના સંભવિત પરિણામનો નિર્ણય કરતી નથી.',
+}
+
+const LanguageContext = createContext<LanguageContextValue | null>(null)
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguage] = useState<AppLanguage>('english')
+  const value = useMemo(() => ({ language, setLanguage, toggleLanguage: () => setLanguage(current => current === 'english' ? 'gujarati' : 'english'), t: (english: string) => language === 'gujarati' ? translations[english] || english : english }), [language])
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
+}
+
+export function useLanguage() {
+  const value = useContext(LanguageContext)
+  if (!value) throw new Error('useLanguage must be used inside LanguageProvider')
+  return value
+}

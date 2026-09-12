@@ -37,8 +37,9 @@ def overview(case_id: str):
     summary_counts = {"documents": db.one("SELECT COUNT(*) count FROM documents WHERE case_id=?", (case_id,))["count"],
                       **metrics}
     graph = graph_repository.data(case_id)
+    source_text = "\n\n".join(row["text"] for row in db.all("SELECT text FROM chunks WHERE case_id=? ORDER BY document_id,page_number LIMIT 24", (case_id,)))
     important = [node for node in graph["nodes"] if node["type"] in {"Accused", "Witness", "Evidence", "Event"}][:8]
-    return {"case": case, "metrics": metrics, "summary": case_summary(case, summary_counts),
+    return {"case": case, "metrics": metrics, "summary": case_summary(case, summary_counts, source_text),
             "key_entities": important, "priority_findings": get_findings(case_id)[:4]}
 
 

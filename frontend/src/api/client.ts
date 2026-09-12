@@ -23,7 +23,7 @@ export const api = {
   upload: async (caseId: string, file: File, role = 'supporting_record') => { const data = new FormData(); data.append('file', file); data.append('role', role); return request<DocumentRecord>(`/cases/${caseId}/documents`, { method: 'POST', body: data }) },
   process: (caseId: string) => request(`/cases/${caseId}/process`, { method: 'POST' }),
   status: (caseId: string) => request<{ state: string; stage: string; progress: number; counts: Record<string, number | string>; stages: { name: string; state: string }[]; error?: string }>(`/cases/${caseId}/status`),
-  overview: (caseId: string) => request<{ case: Case; metrics: Record<string, number>; summary: string; key_entities: GraphData['nodes']; priority_findings: Finding[] }>(`/cases/${caseId}/overview`),
+  overview: (caseId: string) => request<{ case: Case; metrics: Record<string, number>; summary: { english: string; gujarati: string }; key_entities: GraphData['nodes']; priority_findings: Finding[] }>(`/cases/${caseId}/overview`),
   findings: (caseId: string) => request<Finding[]>(`/cases/${caseId}/findings`),
   defense: (caseId: string) => request<Array<{ id: string; type: string; title: string; weakness: string; defense_questions: string[]; relevant_sources: Citation[]; io_action: string; recommended_correction: string; why_important: string; differences: { document: string; role: string; value: string }[]; confidence: number; review_required: boolean }>>(`/cases/${caseId}/defense`),
   judgments: () => request<Judgment[]>('/judgments'),
