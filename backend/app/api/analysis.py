@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.agents.summary_agent import case_summary
 from app.graph.repository import graph_repository
+from app.extraction.date_utils import normalize_date
 from app.services.analysis_service import get_findings
 from app.services.case_service import get_case
 from app.storage.sqlite import db
@@ -96,7 +97,8 @@ def timeline(case_id: str):
             continue
         edges = [edge for edge in graph["edges"] if edge["source"] == node["id"] or edge["target"] == node["id"]]
         citations = [c for e in edges for c in e.get("citations", [])]
-        results.append({"id": node["id"], "date": node["metadata"].get("normalized_date") or node["metadata"].get("date"), "time": node["metadata"].get("time"),
+        raw_date = node["metadata"].get("date")
+        results.append({"id": node["id"], "date": node["metadata"].get("normalized_date") or normalize_date(raw_date) or raw_date, "time": node["metadata"].get("time"),
                         "event": node["label"], "people": [], "location": "Training Square" if "Training" in node["label"] else None,
                         "category": node["metadata"].get("subtype", "investigation"), "confidence": node["confidence"],
                         "uncertain": node["confidence"] < .8, "citation": citations[0] if citations else None})
