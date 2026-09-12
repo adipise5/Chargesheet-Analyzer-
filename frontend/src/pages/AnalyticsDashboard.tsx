@@ -111,7 +111,7 @@ export function AnalyticsDashboard() {
             {/* Summary Stats */}
             <section className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {Object.entries(summaryData).map(([key, value]) => (
-                <div key={key} title={STAT_HELP[key]} className="animate-fade-in group relative z-0 overflow-visible rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:z-50 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
+                <div key={key} aria-label={`${STAT_LABELS[key] || key}: ${STAT_HELP[key]}`} className="animate-fade-in group relative z-0 overflow-visible rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:z-50 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-2xl font-bold tracking-tight text-slate-800">{(value as number).toLocaleString()}</div>
