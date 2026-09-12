@@ -9,15 +9,8 @@ import json
 import re
 from collections import Counter, defaultdict
 
+from app.extraction.date_utils import normalize_date
 from app.storage.sqlite import db
-
-
-GUJARATI_DIGITS = str.maketrans("૦૧૨૩૪૫૬૭૮૯", "0123456789")
-
-
-def _ascii_digits(value: str) -> str:
-    """Normalize Gujarati numerals for aggregation without changing source text."""
-    return value.translate(GUJARATI_DIGITS)
 
 
 def global_summary() -> dict:
@@ -87,14 +80,10 @@ def temporal_distribution() -> list[dict]:
     for row in event_rows:
         try:
             data = json.loads(row["data_json"])
-            date = _ascii_digits(str(data.get("date", "")))
-            # Try DD/MM/YYYY or DD-MM-YYYY format
-            m = re.match(r"(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})", date)
-            if m:
-                day, month, year = m.groups()
-                if len(year) == 2:
-                    year = f"20{year}" if int(year) < 50 else f"19{year}"
-                key = f"{year}-{month.zfill(2)}"
+            date = str(data.get("normalized_date") or data.get("date", ""))
+            canonical = normalize_date(date)
+            if canonical:
+                key = canonical[:7]
                 event_monthly[key] += 1
         except (json.JSONDecodeError, KeyError, ValueError):
             continue

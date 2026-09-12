@@ -96,7 +96,7 @@ def timeline(case_id: str):
             continue
         edges = [edge for edge in graph["edges"] if edge["source"] == node["id"] or edge["target"] == node["id"]]
         citations = [c for e in edges for c in e.get("citations", [])]
-        results.append({"id": node["id"], "date": node["metadata"].get("date"), "time": node["metadata"].get("time"),
+        results.append({"id": node["id"], "date": node["metadata"].get("normalized_date") or node["metadata"].get("date"), "time": node["metadata"].get("time"),
                         "event": node["label"], "people": [], "location": "Training Square" if "Training" in node["label"] else None,
                         "category": node["metadata"].get("subtype", "investigation"), "confidence": node["confidence"],
                         "uncertain": node["confidence"] < .8, "citation": citations[0] if citations else None})

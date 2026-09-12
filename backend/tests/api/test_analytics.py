@@ -10,6 +10,7 @@ from app.services.analytics_service import (
 )
 from app.services.case_service import create_case
 from app.storage.sqlite import db
+from app.extraction.date_utils import normalize_date
 
 
 def test_cross_case_analytics_aggregates_non_demo_records():
@@ -50,3 +51,10 @@ def test_temporal_analytics_merges_ascii_and_gujarati_dates():
     assert {item["month"] for item in result} == {"2026-03", case["created_at"][:7]}
     march = next(item for item in result if item["month"] == "2026-03")
     assert march["crime_events"] == 2
+
+
+def test_date_normalization_handles_gujarati_and_year_first_formats():
+    assert normalize_date("૧૩/૦૩/૨૦૨૬") == "2026-03-13"
+    assert normalize_date("13.03.2026") == "2026-03-13"
+    assert normalize_date("2026-03-13") == "2026-03-13"
+    assert normalize_date("31/02/2026") is None
