@@ -40,9 +40,14 @@ def _add_action_fields(finding: dict) -> None:
     finding.setdefault("defense_questions", ["What is the source for this assertion?", "Can the IO explain this issue with the original record?"])
     finding.setdefault("related_document_roles", [])
     if finding["type"] == "weak_point":
-        finding["why_important"] = "A single-source assertion may be challenged as uncorroborated."
-        finding["recommended_correction"] = "Locate independent supporting material or qualify the assertion in the draft."
-        finding["io_action"] = "Confirm whether an independent witness, document, forensic result, or digital record supports this claim."
+        if finding.get("summary", "").startswith("This candidate claim is presently linked to a single source passage"):
+            page = (finding.get("supporting_sources") or [{}])[0].get("page", "the cited")
+            claim = finding.get("title", "This extracted claim")[:180]
+            finding["summary"] = f"This extracted claim — {claim} — is linked to only one source passage (page {page}). No second document or independent supporting link was located in the uploaded record."
+            finding["why_important"] = "A single-source claim may be challenged as uncorroborated if no independent record supports it."
+            finding["recommended_correction"] = "Check the FIR, witness statements, medical/forensic records, seizure memo, and digital material for independent support; qualify the claim if none exists."
+            finding["io_action"] = f"Review the source passage on page {page} and record which independent document or witness, if any, corroborates this claim."
+            finding["defense_questions"] = ["What independent evidence corroborates this claim?", f"Why is this claim presently supported only by page {page}?"]
     elif finding["type"] == "contradiction":
         finding["why_important"] = "An unresolved contradiction can undermine witness credibility and the sequence of events."
         finding["recommended_correction"] = "Resolve the conflict from the original record or clearly preserve and explain the uncertainty."
