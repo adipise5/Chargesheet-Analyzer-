@@ -35,10 +35,16 @@ export function useLanguage() {
 export function useTranslatedTexts(texts: Array<string | undefined>) {
   const { language } = useLanguage()
   const stableTexts = texts.filter((text): text is string => Boolean(text))
-  const textKey = stableTexts.join('\u0000')
+  const uniqueTexts = [...new Set(stableTexts)]
+  const textKey = uniqueTexts.join('\u0000')
   const query = useQuery({
     queryKey: ['translations', language, stableTexts],
-    queryFn: () => api.translate(stableTexts, language),
+    queryFn: async () => {
+      const batches: string[][] = []
+      for (let index = 0; index < uniqueTexts.length; index += 1) batches.push(uniqueTexts.slice(index, index + 1))
+      const responses = await Promise.all(batches.map(batch => api.translate(batch, language)))
+      return { translations: responses.flatMap(response => response.translations) }
+    },
     enabled: language === 'english' && stableTexts.length > 0,
     staleTime: Infinity,
   })

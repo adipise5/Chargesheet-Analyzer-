@@ -1,6 +1,6 @@
 import json
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/system", tags=["system"])
 
 
 class TranslationRequest(BaseModel):
-    texts: list[str] = Field(min_length=1, max_length=60)
+    texts: list[str] = Field(min_length=1, max_length=200)
     target: str = Field(pattern="^(english|gujarati)$")
 
 
