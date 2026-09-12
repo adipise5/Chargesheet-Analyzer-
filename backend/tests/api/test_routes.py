@@ -63,3 +63,37 @@ def test_delete_case_removes_database_rows_and_files(tmp_path, monkeypatch):
     assert delete_case(case["id"])
     assert db.one("SELECT 1 FROM cases WHERE id=?", (case["id"],)) is None
     assert not stored.exists()
+
+
+def test_purge_all_data_removes_runtime_rows_files_and_legacy_db(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    import app.services.purge_service as purge_service
+
+    cases_root = tmp_path / "cases"
+    data_root = tmp_path / "data"
+    cases_root.mkdir()
+    (cases_root / ".gitkeep").write_text("")
+    private_case_file = cases_root / "case_private" / "documents" / "private.pdf"
+    private_case_file.parent.mkdir(parents=True)
+    private_case_file.write_bytes(b"synthetic private test content")
+    judgment_file = data_root / "legal_kb" / "judgments" / "judgment.pdf"
+    judgment_file.parent.mkdir(parents=True)
+    judgment_file.write_bytes(b"synthetic judgment")
+    legacy_db = data_root / "chargesheet.sqlite"
+    legacy_db.parent.mkdir(parents=True, exist_ok=True)
+    legacy_db.write_bytes(b"legacy placeholder")
+    monkeypatch.setattr(purge_service, "settings", SimpleNamespace(cases_dir=cases_root, data_dir=data_root))
+
+    case = create_case({"case_number": "PURGE-ME", "police_station": "Synthetic Test"})
+    db.execute("INSERT INTO judgments(id,title,court,judgment_year,filename,stored_path,page_count,created_at) VALUES(?,?,?,?,?,?,?,?)",
+               ("judgment_test", "Synthetic", "Test Court", "2026", "judgment.pdf", str(judgment_file), 1, "2026-01-01"))
+
+    removed = purge_service.purge_all_data()
+
+    assert removed["cases"] == 1
+    assert removed["judgments"] == 1
+    assert db.one("SELECT 1 FROM cases WHERE id=?", (case["id"],)) is None
+    assert db.one("SELECT 1 FROM judgments WHERE id='judgment_test'") is None
+    assert list(cases_root.iterdir()) == [cases_root / ".gitkeep"]
+    assert not judgment_file.exists()
+    assert not legacy_db.exists()

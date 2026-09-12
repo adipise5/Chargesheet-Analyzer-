@@ -1,4 +1,4 @@
-import { Activity, BarChart3, FilePlus2, FolderKanban, Gauge, LockKeyhole, Settings, Shield, Sparkles } from 'lucide-react'
+import { Activity, BarChart3, FilePlus2, FolderKanban, Gauge, LockKeyhole, Settings, Shield, Sparkles, Trash2 } from 'lucide-react'
 import type { Case } from '../types'
 
 type Props = {
@@ -10,9 +10,10 @@ type Props = {
   onAnalytics: () => void
   onNew: () => void
   onCase: (id: string) => void
+  onPurge: () => void
 }
 
-export function Sidebar({ cases, selectedCaseId, screen, onDashboard, onCases, onAnalytics, onNew, onCase }: Props) {
+export function Sidebar({ cases, selectedCaseId, screen, onDashboard, onCases, onAnalytics, onNew, onCase, onPurge }: Props) {
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex w-[258px] flex-col bg-navy text-slate-100">
       <div className="border-b border-white/10 px-5 py-5">
@@ -39,6 +40,7 @@ export function Sidebar({ cases, selectedCaseId, screen, onDashboard, onCases, o
       <div className="space-y-1 border-t border-white/10 p-3">
         <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-slate-400"><Activity size={15} /> Audit / System</div>
         <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-slate-400"><Settings size={15} /> Settings</div>
+        <button onClick={onPurge} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-300 transition hover:bg-red-950/40 hover:text-red-200"><Trash2 size={15} /> Purge sensitive data</button>
         <div className="mt-3 flex items-start gap-2 rounded-lg bg-emerald-950/35 px-3 py-3 text-[10px] leading-relaxed text-emerald-100/75"><LockKeyhole className="mt-0.5 shrink-0" size={13} />On-device processing. No case content leaves approved local services.</div>
       </div>
     </aside>

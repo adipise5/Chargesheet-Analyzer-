@@ -4,8 +4,15 @@ from app.core.config import settings
 from app.core.model_config import ModelConfig
 from app.ocr.tesseract_provider import TesseractOCRProvider
 from app.services.ollama_service import OllamaService
+from app.services.purge_service import purge_all_data
 
 router = APIRouter(prefix="/api/system", tags=["system"])
+
+
+@router.delete("/purge")
+def purge_data():
+    """Permanently erase all local case and judgment runtime data."""
+    return {"status": "purged", "removed": purge_all_data()}
 
 
 @router.get("/health")
