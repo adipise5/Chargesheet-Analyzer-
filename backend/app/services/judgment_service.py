@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import uuid
 from pathlib import Path
@@ -51,11 +53,42 @@ def _tokens(value: str) -> set[str]:
     return {token for token in re.findall(r"[\w\u0A80-\u0AFF]{4,}", value.casefold())}
 
 
+def _precedent_fingerprint(case_id: str, findings: list[dict], judgment_rows: list[dict]) -> str:
+    """Fingerprint the case review and local judgment corpus used for matching."""
+    stable_findings = []
+    for row in findings:
+        try:
+            finding = json.loads(row["data_json"])
+            finding.pop("id", None)  # IDs are regenerated on every rebuild.
+            stable_findings.append(finding)
+        except (TypeError, json.JSONDecodeError):
+            stable_findings.append(row["data_json"])
+    payload = {
+        "case_id": case_id,
+        "findings": stable_findings,
+        "judgments": [
+            {key: row.get(key) for key in ("id", "judgment_id", "page_number", "text", "title", "court", "judgment_year")}
+            for row in judgment_rows
+        ],
+    }
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def analyze_precedents(case_id: str) -> dict:
     findings = db.all("SELECT data_json FROM findings WHERE case_id=?", (case_id,))
     case_text = " ".join(row["data_json"] for row in findings)
     query_terms = _tokens(case_text) | {"contradiction", "witness", "evidence", "investigation", "custody"}
     rows = db.all("SELECT c.*,j.title,j.court,j.judgment_year FROM judgment_chunks c JOIN judgments j ON j.id=c.judgment_id")
+    fingerprint = _precedent_fingerprint(case_id, findings, rows)
+    cached = db.one("SELECT precedents_json FROM cases WHERE id=? AND precedents_fingerprint=?", (case_id, fingerprint))
+    if cached and cached.get("precedents_json"):
+        try:
+            candidate = json.loads(cached["precedents_json"])
+            if isinstance(candidate, dict) and isinstance(candidate.get("insights"), str) and isinstance(candidate.get("citations"), list):
+                return candidate
+        except (TypeError, json.JSONDecodeError):
+            pass
     scored = []
     for row in rows:
         overlap = len(query_terms & _tokens(row["text"]))
@@ -66,7 +99,9 @@ def analyze_precedents(case_id: str) -> dict:
     citations = [{"judgment_id": row["judgment_id"], "page": row["page_number"], "chunk_id": row["id"],
                   "label": f"{row['title']} — p{row['page_number']}"} for row in selected]
     if not selected:
-        return {"insights": "No relevant local judgments were found. Import approved local judgments before using precedent analysis.", "citations": [], "review_required": True, "matches": []}
+        result = {"insights": "No relevant local judgments were found. Import approved local judgments before using precedent analysis.", "citations": [], "review_required": True, "matches": []}
+        db.execute("UPDATE cases SET precedents_json=?,precedents_fingerprint=? WHERE id=?", (json.dumps(result, ensure_ascii=False), fingerprint, case_id))
+        return result
     context = "\n\n".join(f"SOURCE {index + 1} ({row['title']}, page {row['page_number']}):\n{row['text'][:4500]}" for index, row in enumerate(selected))
     prompt = ("You are a local legal-research assistant. Based only on the supplied judgment excerpts, identify recurring prosecution weaknesses or court concerns relevant to this case. "
               "Do not state that a court will reach a particular result, do not invent holdings, and distinguish quotation from inference. Give practical verification points for the investigating officer. Cite SOURCE numbers.\n\n" + context)
@@ -78,6 +113,8 @@ def analyze_precedents(case_id: str) -> dict:
         insights = "Relevant local judgment passages were found. Review them for recurring concerns before drawing any legal conclusion:\n" + "\n".join(
             f"• {excerpt} ({row['title']}, p.{row['page_number']})" for excerpt, row in zip(excerpts, selected[:5]))
         review_required = True
-    return {"insights": insights, "citations": citations, "review_required": review_required,
-            "matches": [{"title": row["title"], "court": row["court"], "year": row["judgment_year"], "page": row["page_number"], "score": score}
-                        for score, row in scored[:8]]}
+    result = {"insights": insights, "citations": citations, "review_required": review_required,
+              "matches": [{"title": row["title"], "court": row["court"], "year": row["judgment_year"], "page": row["page_number"], "score": score}
+                          for score, row in scored[:8]]}
+    db.execute("UPDATE cases SET precedents_json=?,precedents_fingerprint=? WHERE id=?", (json.dumps(result, ensure_ascii=False), fingerprint, case_id))
+    return result

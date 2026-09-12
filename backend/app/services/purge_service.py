@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.storage.sqlite import db
 
 
-TABLES = ("judgment_chunks", "judgments", "relations", "objects", "findings", "chunks", "pages", "documents", "jobs", "audits", "cases")
+TABLES = ("translation_cache", "judgment_chunks", "judgments", "relations", "objects", "findings", "chunks", "pages", "documents", "jobs", "audits", "cases")
 
 
 def _clear_directory(directory: Path, preserve: set[str] | None = None) -> int:

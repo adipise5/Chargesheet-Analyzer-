@@ -10,12 +10,14 @@ from app.extraction.document_classifier import classify_document
 from app.extraction.entity_resolution import normalize_text
 from app.graph.builder import build_graph
 from app.graph.repository import graph_repository
+from app.agents.summary_agent import case_summary, summary_fingerprint, summary_source_text
 from app.ingestion.page_renderer import render_page
 from app.ocr.router import DigitalPDFProvider, OCRRouter
 from app.ocr.tesseract_provider import TesseractOCRProvider
 from app.ocr.vision_verifier import VisionOCRVerifier
 from app.services.analysis_service import generate_findings
 from app.services.embedding_service import OllamaEmbeddingProvider
+from app.services.judgment_service import analyze_precedents
 from app.storage.filesystem import storage
 from app.storage.sqlite import db, now_iso
 
@@ -207,6 +209,31 @@ def process_case(case_id: str) -> None:
         _job(case_id, "running", 9, 84, counts)
         findings = generate_findings(case_id, objects, all_chunks)
         counts["findings"] = len(findings)
+        # Generate the reusable case summary once, after extraction and findings
+        # are complete. Overview reads this persisted result instead of invoking
+        # the local model on the first page visit.
+        summary_metrics = {
+            "pages": db.one("SELECT COUNT(*) count FROM pages WHERE case_id=?", (case_id,))["count"],
+            "accused": sum(1 for item in objects if item["kind"] == "Accused"),
+            "witnesses": sum(1 for item in objects if item["kind"] == "Witness"),
+            "evidence": sum(1 for item in objects if item["kind"] in {"Evidence", "DigitalEvidence", "PhysicalEvidence", "ForensicEvidence"}),
+            "claims": sum(1 for item in objects if item["kind"] == "Claim"),
+            "contradictions": sum(1 for item in findings if item["type"] == "contradiction"),
+            "review_flags": db.one("SELECT COUNT(*) count FROM pages WHERE case_id=? AND review_status='needs_review'", (case_id,))["count"]
+                            + sum(1 for item in findings if item.get("human_review_required")),
+        }
+        summary_counts = {"documents": len(documents), **summary_metrics}
+        source_text = summary_source_text(case_id, db)
+        summary_documents = db.all("SELECT id,sha256,role,category,page_count FROM documents WHERE case_id=? ORDER BY id", (case_id,))
+        fingerprint = summary_fingerprint(case, summary_counts, source_text, summary_documents)
+        summary = case_summary(case, summary_counts, source_text)
+        db.execute("UPDATE cases SET summary_json=?,summary_fingerprint=? WHERE id=?",
+                   (json.dumps(summary, ensure_ascii=False), fingerprint, case_id))
+        # If an approved local judgment corpus already exists, warm the
+        # content-aware precedent cache too. Later imports change its
+        # fingerprint and are still handled lazily by the Precedents tab.
+        if db.one("SELECT 1 FROM judgment_chunks LIMIT 1"):
+            analyze_precedents(case_id)
         _job(case_id, "running", 11, 96, counts)
         db.execute("UPDATE cases SET status='ready',updated_at=? WHERE id=?", (now_iso(), case_id))
         db.audit("finding_verified", case_id, {"count": sum(f["verified"] for f in findings)})

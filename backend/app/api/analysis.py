@@ -4,7 +4,7 @@ import json
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.agents.summary_agent import case_summary, summary_fingerprint
+from app.agents.summary_agent import case_summary, summary_fingerprint, summary_source_text
 from app.graph.repository import graph_repository
 from app.extraction.date_utils import normalize_date
 from app.services.analysis_service import get_findings
@@ -38,7 +38,7 @@ def overview(case_id: str):
     summary_counts = {"documents": db.one("SELECT COUNT(*) count FROM documents WHERE case_id=?", (case_id,))["count"],
                       **metrics}
     graph = graph_repository.data(case_id)
-    source_text = "\n\n".join(row["text"] for row in db.all("SELECT text FROM chunks WHERE case_id=? ORDER BY document_id,page_number LIMIT 24", (case_id,)))
+    source_text = summary_source_text(case_id, db)
     important = [node for node in graph["nodes"] if node["type"] in {"Accused", "Witness", "Evidence", "Event"}][:8]
     documents = db.all("SELECT id,sha256,role,category,page_count FROM documents WHERE case_id=? ORDER BY id", (case_id,))
     fingerprint = summary_fingerprint(case, summary_counts, source_text, documents)

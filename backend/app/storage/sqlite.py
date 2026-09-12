@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS cases (
   id TEXT PRIMARY KEY, case_number TEXT NOT NULL, police_station TEXT NOT NULL,
   language TEXT NOT NULL, status TEXT NOT NULL, is_demo INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-  summary_json TEXT, summary_fingerprint TEXT
+  summary_json TEXT, summary_fingerprint TEXT,
+  precedents_json TEXT, precedents_fingerprint TEXT
 );
 CREATE TABLE IF NOT EXISTS documents (
   id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
@@ -67,6 +68,11 @@ CREATE TABLE IF NOT EXISTS judgment_chunks (
   id TEXT PRIMARY KEY, judgment_id TEXT NOT NULL REFERENCES judgments(id) ON DELETE CASCADE,
   page_number INTEGER NOT NULL, text TEXT NOT NULL, normalized_text TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS translation_cache (
+  text_hash TEXT NOT NULL, target TEXT NOT NULL, source_text TEXT NOT NULL,
+  translated_text TEXT NOT NULL, created_at TEXT NOT NULL,
+  PRIMARY KEY(text_hash, target)
+);
 CREATE INDEX IF NOT EXISTS idx_documents_case ON documents(case_id);
 CREATE INDEX IF NOT EXISTS idx_pages_case ON pages(case_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_case ON chunks(case_id);
@@ -97,6 +103,10 @@ class Database:
                 connection.execute("ALTER TABLE cases ADD COLUMN summary_json TEXT")
             if "summary_fingerprint" not in case_columns:
                 connection.execute("ALTER TABLE cases ADD COLUMN summary_fingerprint TEXT")
+            if "precedents_json" not in case_columns:
+                connection.execute("ALTER TABLE cases ADD COLUMN precedents_json TEXT")
+            if "precedents_fingerprint" not in case_columns:
+                connection.execute("ALTER TABLE cases ADD COLUMN precedents_fingerprint TEXT")
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:

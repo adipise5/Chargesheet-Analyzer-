@@ -29,6 +29,16 @@ def summary_fingerprint(case: dict, counts: dict, source_text: str, documents: l
     return hashlib.sha256(encoded).hexdigest()
 
 
+def summary_source_text(case_id: str, db) -> str:
+    """Return the bounded, stable source window used by summary generation."""
+    return "\n\n".join(
+        row["text"] for row in db.all(
+            "SELECT text FROM chunks WHERE case_id=? ORDER BY document_id,page_number LIMIT 24",
+            (case_id,),
+        )
+    )
+
+
 def _fallback(case: dict, counts: dict) -> dict[str, str]:
     english = (f"{case['case_number']} contains {counts.get('documents', 0)} document(s) and {counts.get('pages', 0)} page(s). "
                f"The workspace has identified {counts.get('claims', 0)} candidate claim(s) and {counts.get('evidence', 0)} evidence reference(s). "
