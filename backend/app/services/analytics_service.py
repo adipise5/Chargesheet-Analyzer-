@@ -57,18 +57,26 @@ def crime_type_distribution() -> list[dict]:
 
 
 def temporal_distribution() -> list[dict]:
-    """Cases grouped by month for seasonality analysis."""
-    rows = db.all(
-        "SELECT created_at FROM cases WHERE is_demo=0", ()
-    )
-    monthly: Counter = Counter()
+    """Separate case registration, extraction completion, and source events by month."""
+    rows = db.all("SELECT created_at FROM cases WHERE is_demo=0", ())
+    registered_monthly: Counter = Counter()
     for row in rows:
-        date_str = row["created_at"]
-        # Parse ISO datetime to extract year-month
-        match = re.match(r"(\d{4})-(\d{2})", date_str)
+        match = re.match(r"(\d{4})-(\d{2})", row["created_at"] or "")
         if match:
-            key = f"{match.group(1)}-{match.group(2)}"
-            monthly[key] += 1
+            registered_monthly[f"{match.group(1)}-{match.group(2)}"] += 1
+
+    # Extraction completion is recorded by the processing job. Fall back to the
+    # upload timestamp for legacy records that predate the jobs table.
+    extracted_rows = db.all(
+        "SELECT c.id, COALESCE(j.updated_at, MIN(d.created_at)) AS extracted_at "
+        "FROM cases c LEFT JOIN jobs j ON j.case_id=c.id AND j.state='complete' "
+        "LEFT JOIN documents d ON d.case_id=c.id WHERE c.is_demo=0 GROUP BY c.id", ()
+    )
+    extracted_monthly: Counter = Counter()
+    for row in extracted_rows:
+        match = re.match(r"(\d{4})-(\d{2})", row["extracted_at"] or "")
+        if match:
+            extracted_monthly[f"{match.group(1)}-{match.group(2)}"] += 1
 
     # Also include event dates from objects
     event_rows = db.all(
@@ -92,10 +100,11 @@ def temporal_distribution() -> list[dict]:
             continue
 
     # Merge both: case registration dates and event dates
-    all_months = sorted(set(monthly.keys()) | set(event_monthly.keys()))
+    all_months = sorted(set(registered_monthly.keys()) | set(extracted_monthly.keys()) | set(event_monthly.keys()))
     return [{
         "month": m,
-        "cases_registered": monthly.get(m, 0),
+        "cases_registered": registered_monthly.get(m, 0),
+        "cases_extracted": extracted_monthly.get(m, 0),
         "crime_events": event_monthly.get(m, 0),
     } for m in all_months]
 

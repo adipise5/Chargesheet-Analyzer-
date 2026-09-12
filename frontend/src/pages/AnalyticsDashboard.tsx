@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   BarChart3, TrendingUp, MapPin, Shield, Scale, FileText, Users, Search,
@@ -54,6 +55,7 @@ const STAT_HELP: Record<string, string> = {
 }
 
 export function AnalyticsDashboard() {
+  const [visibleSeries, setVisibleSeries] = useState({ registered: true, extracted: true, events: true })
   const summary = useQuery({ queryKey: ['analytics-summary'], queryFn: api.analyticsSummary })
   const crimeTypes = useQuery({ queryKey: ['analytics-crime-types'], queryFn: api.analyticsCrimeTypes })
   const temporal = useQuery({ queryKey: ['analytics-temporal'], queryFn: api.analyticsTemporal })
@@ -133,11 +135,16 @@ export function AnalyticsDashboard() {
             <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
               {/* Crime Seasonality */}
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-sky-50 text-sky-600"><TrendingUp size={16} /></div>
                   <div>
                     <h2 className="text-sm font-bold text-slate-800">Crime seasonality</h2>
                     <p className="text-[10px] text-slate-400">Case registrations and extracted events by month</p>
+                    <div className="flex flex-wrap gap-2 text-[10px]">
+                      <SeriesToggle label="Cases registered" color="bg-teal-600" checked={visibleSeries.registered} onChange={() => setVisibleSeries(value => ({ ...value, registered: !value.registered }))} />
+                      <SeriesToggle label="Cases extracted" color="bg-violet-500" checked={visibleSeries.extracted} onChange={() => setVisibleSeries(value => ({ ...value, extracted: !value.extracted }))} />
+                      <SeriesToggle label="Extracted events" color="bg-sky-500" checked={visibleSeries.events} onChange={() => setVisibleSeries(value => ({ ...value, events: !value.events }))} />
+                    </div>
                   </div>
                 </div>
                 {(temporal.data?.length || 0) > 0 ? (
@@ -159,8 +166,9 @@ export function AnalyticsDashboard() {
                         <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
                         <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                        <Area type="monotone" dataKey="cases_registered" stroke="#0d9488" fill="url(#casesGrad)" strokeWidth={2} name="Cases registered" />
-                        <Area type="monotone" dataKey="crime_events" stroke="#0ea5e9" fill="url(#eventsGrad)" strokeWidth={2} name="Extracted events" />
+                        {visibleSeries.registered && <Area type="monotone" dataKey="cases_registered" stroke="#0d9488" fill="url(#casesGrad)" strokeWidth={2} name="Cases registered" />}
+                        {visibleSeries.extracted && <Area type="monotone" dataKey="cases_extracted" stroke="#8b5cf6" fillOpacity={0} strokeWidth={2} strokeDasharray="5 4" name="Cases extracted" />}
+                        {visibleSeries.events && <Area type="monotone" dataKey="crime_events" stroke="#0ea5e9" fill="url(#eventsGrad)" strokeWidth={2} name="Extracted events" />}
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -406,4 +414,8 @@ function EmptyChart({ message }: { message: string }) {
       </div>
     </div>
   )
+}
+
+function SeriesToggle({ label, color, checked, onChange }: { label: string; color: string; checked: boolean; onChange: () => void }) {
+  return <button type="button" onClick={onChange} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 font-semibold transition ${checked ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-100 bg-slate-50 text-slate-300 line-through'}`}><span className={`h-2 w-2 rounded-full ${color} ${checked ? '' : 'opacity-30'}`} />{label}</button>
 }
