@@ -26,6 +26,13 @@ class Finding(BaseModel):
     factors: dict[str, float | int | bool] = {}
     human_review_required: bool = False
     verified: bool = False
+    issue: str = ""
+    differences: list[dict[str, str]] = []
+    why_important: str = ""
+    recommended_correction: str = ""
+    io_action: str = ""
+    defense_questions: list[str] = []
+    related_document_roles: list[str] = []
 
     @model_validator(mode="after")
     def confirmed_findings_require_sources(self):

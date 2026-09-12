@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from app.core.security import UploadValidationError
@@ -12,10 +12,10 @@ router = APIRouter(prefix="/api/cases/{case_id}", tags=["documents"])
 
 
 @router.post("/documents", status_code=201)
-async def upload_document(case_id: str, file: UploadFile = File(...)):
+async def upload_document(case_id: str, file: UploadFile = File(...), role: str = Form(default="supporting_record")):
     data = await file.read()
     try:
-        return save_document(case_id, file.filename, data)
+        return save_document(case_id, file.filename, data, role)
     except LookupError as exc:
         raise HTTPException(404, detail={"code": "CASE_NOT_FOUND", "message": str(exc)}) from exc
     except (UploadValidationError, ValueError) as exc:
@@ -26,7 +26,7 @@ async def upload_document(case_id: str, file: UploadFile = File(...)):
 def documents(case_id: str):
     if not get_case(case_id):
         raise HTTPException(404, "Case not found")
-    return db.all("SELECT id,case_id,filename,category,page_count,sha256,status,created_at FROM documents WHERE case_id=?", (case_id,))
+    return db.all("SELECT id,case_id,filename,category,page_count,sha256,status,role,created_at FROM documents WHERE case_id=?", (case_id,))
 
 
 @router.get("/documents/{document_id}/file")

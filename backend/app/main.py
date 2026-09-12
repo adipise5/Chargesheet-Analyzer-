@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import analysis, cases, documents, graph, processing, query, review, system
+from app.api import analysis, cases, documents, graph, judgments, processing, query, review, system
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.storage.sqlite import db
@@ -35,7 +35,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH"],
     allow_headers=["Content-Type"],
 )
-for router in (cases.router, documents.router, processing.router, analysis.router, graph.router, query.router, review.router, system.router):
+for router in (cases.router, documents.router, judgments.router, processing.router, analysis.router, graph.router, query.router, review.router, system.router):
     app.include_router(router)
 
 

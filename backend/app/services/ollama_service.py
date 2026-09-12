@@ -77,6 +77,12 @@ class OllamaService(LLMProvider):
             with httpx.Client(timeout=180, trust_env=False) as client:
                 response = client.post(f"{self.config.ollama_base_url}/api/chat", json=payload)
                 response.raise_for_status()
-            return response.json()["message"]["content"].strip()
+            result = response.json()
+            content = result["message"]["content"].strip()
+            if not content:
+                raise LocalModelUnavailable("Local model returned an empty answer")
+            if result.get("done_reason") == "length":
+                content += "\n\nThe model reached its response limit. Ask a narrower question for more detail."
+            return content
         except Exception as exc:
             raise LocalModelUnavailable(f"Local model unavailable: {exc}") from exc

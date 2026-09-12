@@ -31,7 +31,7 @@ export function Dashboard({ cases, onCase, onNew, onDemo }: { cases: Case[]; onC
               <HealthRow label="Local Qwen" value={qwenReady ? health.data!.llm_model : `Missing · ${health.data?.llm_model || 'checking'}`} ok={qwenReady} />
               <HealthRow label="BGE-M3" value={embeddingReady ? health.data!.embedding_model : `Missing · ${health.data?.embedding_model || 'checking'}`} ok={embeddingReady} />
               <HealthRow label="Tesseract guj+eng" value={health.data?.tesseract.message || 'Checking'} ok={!!health.data?.tesseract.available} />
-              <HealthRow label="Neo4j projection" value={health.data?.neo4j.mode || 'Checking'} ok={!!health.data?.neo4j.available} />
+              <HealthRow label="Neo4j projection" value={health.data?.neo4j.mode || 'Checking'} ok={!!health.data?.neo4j.mode} />
             </div>
           </div>
         </section>

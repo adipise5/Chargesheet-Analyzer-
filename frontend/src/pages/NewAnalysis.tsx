@@ -7,6 +7,7 @@ export function NewAnalysis({ onCreated }: { onCreated: (id: string) => void }) 
   const [file, setFile] = useState<File | null>(null)
   const [caseNumber, setCaseNumber] = useState('')
   const [station, setStation] = useState('')
+  const [role, setRole] = useState('draft_chargesheet')
   const [dragging, setDragging] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -22,7 +23,7 @@ export function NewAnalysis({ onCreated }: { onCreated: (id: string) => void }) 
     setBusy(true); setError('')
     try {
       const created = await api.createCase({ case_number: caseNumber.trim(), police_station: station.trim() || 'Not specified', language: 'Gujarati / English' })
-      await api.upload(created.id, file)
+      await api.upload(created.id, file, role)
       await api.process(created.id)
       onCreated(created.id)
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Upload failed') } finally { setBusy(false) }
@@ -31,7 +32,7 @@ export function NewAnalysis({ onCreated }: { onCreated: (id: string) => void }) 
     <main className="min-h-screen bg-canvas px-8 py-8">
       <div className="mx-auto max-w-4xl"><div className="eyebrow">New analysis</div><h1 className="mt-2 text-3xl font-semibold tracking-tight">Upload chargesheet</h1><p className="mt-2 text-sm text-slate-500">Gujarati or English · digital, scanned, handwritten, or mixed PDF</p>
         <div className="panel mt-7 p-6">
-          <div className="grid gap-5 md:grid-cols-2"><label className="text-xs font-semibold text-slate-600">FIR / Case ID<input value={caseNumber} onChange={event => setCaseNumber(event.target.value)} placeholder="e.g. FIR-123/2026" className="mt-2 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-normal" /></label><label className="text-xs font-semibold text-slate-600">Police station<input value={station} onChange={event => setStation(event.target.value)} placeholder="Police station" className="mt-2 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-normal" /></label></div>
+          <div className="grid gap-5 md:grid-cols-3"><label className="text-xs font-semibold text-slate-600">FIR / Case ID<input value={caseNumber} onChange={event => setCaseNumber(event.target.value)} placeholder="e.g. FIR-123/2026" className="mt-2 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-normal" /></label><label className="text-xs font-semibold text-slate-600">Police station<input value={station} onChange={event => setStation(event.target.value)} placeholder="Police station" className="mt-2 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-normal" /></label><label className="text-xs font-semibold text-slate-600">Document role<select value={role} onChange={event => setRole(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-normal"><option value="draft_chargesheet">Draft chargesheet</option><option value="fir">FIR</option><option value="case_diary">Case diary</option><option value="witness_statement">Witness statement</option><option value="medical_report">Medical report</option><option value="forensic_report">Forensic report</option><option value="cctv_record">CCTV / digital record</option><option value="seizure_memo">Seizure memo</option><option value="supporting_record">Other supporting record</option></select></label></div>
           <div onDragOver={event => { event.preventDefault(); setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); select(event.dataTransfer.files[0]) }} onClick={() => input.current?.click()} className={`mt-6 grid min-h-64 cursor-pointer place-items-center rounded-xl border-2 border-dashed p-8 text-center transition ${dragging ? 'border-teal-500 bg-teal-50' : file ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200 hover:border-sky-300 hover:bg-sky-50/30'}`}>
             <input ref={input} type="file" accept="application/pdf,.pdf" className="hidden" onChange={event => select(event.target.files?.[0])} />
             {file ? <div><div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-emerald-100 text-emerald-700"><FileText /></div><div className="mt-4 flex items-center justify-center gap-2 text-sm font-semibold"><CheckCircle2 size={16} className="text-emerald-600" />{file.name}<button onClick={event => { event.stopPropagation(); setFile(null) }} aria-label="Remove file" className="rounded p-1 hover:bg-slate-100"><X size={14} /></button></div><p className="mt-1 text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(1)} MB · ready to validate</p></div> : <div><div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-sky-50 text-sky-700"><UploadCloud /></div><h2 className="mt-4 text-sm font-semibold">Drop chargesheet PDF here</h2><p className="mt-2 text-xs text-slate-500">or click to choose a file · maximum 250 MB</p></div>}

@@ -48,6 +48,25 @@ def findings(case_id: str, type: str | None = Query(default=None)):
     return get_findings(case_id, type)
 
 
+@router.get("/defense")
+def defense(case_id: str):
+    """Return review findings framed as possible defense challenges."""
+    _assert_case(case_id)
+    result = []
+    for item in get_findings(case_id):
+        if item.get("type") == "strong_point":
+            continue
+        result.append({"id": item["id"], "type": item["type"], "title": item["title"],
+                       "weakness": item.get("issue") or item["summary"],
+                       "defense_questions": item.get("defense_questions", []),
+                       "relevant_sources": item.get("supporting_sources", []) + item.get("contradicting_sources", []),
+                       "io_action": item.get("io_action", "Review the cited source pages and record the explanation."),
+                       "recommended_correction": item.get("recommended_correction", ""),
+                       "why_important": item.get("why_important", ""), "differences": item.get("differences", []),
+                       "confidence": item.get("confidence", 0), "review_required": True})
+    return result
+
+
 @router.get("/evidence")
 def evidence(case_id: str):
     _assert_case(case_id)

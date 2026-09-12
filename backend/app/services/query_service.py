@@ -9,9 +9,50 @@ from app.services.ollama_service import OllamaService
 from app.storage.sqlite import db
 
 
+def _unlinked_evidence_response(graph: dict) -> dict | None:
+    """Answer the UI's unlinked-evidence question from graph facts, not synthesis."""
+    evidence_types = {"Evidence", "DigitalEvidence", "PhysicalEvidence", "ForensicEvidence"}
+    unlinked: list[tuple[dict, list[dict]]] = []
+    for node in graph["nodes"]:
+        if node["type"] not in evidence_types:
+            continue
+        edges = [edge for edge in graph["edges"] if edge["source"] == node["id"] or edge["target"] == node["id"]]
+        linked_to_claim = any(
+            edge["relation"] in {"SUPPORTS", "CONTRADICTS"}
+            and any(candidate["id"] in {edge["source"], edge["target"]} and candidate["type"] == "Claim" for candidate in graph["nodes"])
+            for edge in edges
+        )
+        if not linked_to_claim:
+            unlinked.append((node, [citation for edge in edges for citation in edge.get("citations", [])]))
+    if not unlinked:
+        return None
+    citations: list[dict] = []
+    seen = set()
+    lines = ["The following evidence nodes are not linked to a claim in the current extracted graph:"]
+    for node, sources in unlinked[:12]:
+        label = sources[0].get("label", "source passage") if sources else "no source citation"
+        lines.append(f"• {node['label']} — {label}.")
+        for citation in sources:
+            key = (citation.get("document_id"), citation.get("page"), citation.get("chunk_id"))
+            if key not in seen:
+                seen.add(key)
+                citations.append(citation)
+    if len(unlinked) > 12:
+        lines.append(f"• {len(unlinked) - 12} additional extracted evidence node(s) are also unlinked.")
+    return {"answer": "\n".join(lines), "citations": citations, "graph_paths": [], "confidence": 0.8,
+            "review_required": True, "retrieval": []}
+
+
 def query_case(case_id: str, question: str) -> dict:
     chunks = db.all("SELECT c.*,d.filename AS document_label FROM chunks c JOIN documents d ON d.id=c.document_id WHERE c.case_id=?", (case_id,))
     graph = graph_repository.data(case_id)
+    normalized_question = question.lower()
+    if "evidence" in normalized_question and ("unlinked" in normalized_question or "not linked" in normalized_question):
+        deterministic = _unlinked_evidence_response(graph)
+        if deterministic:
+            db.audit("question_asked", case_id, {"count": 1})
+            db.audit("sources_retrieved", case_id, {"count": len(deterministic["citations"])})
+            return deterministic
     results = HybridRetriever().retrieve(question, graph, chunks)
     context, citations = build_context(results)
     if not citations:
@@ -21,7 +62,7 @@ def query_case(case_id: str, question: str) -> dict:
     prompt = f"{prompt_text}\n\nQUESTION:\n{question}\n\nRETRIEVED LOCAL CONTEXT:\n{context}"
     try:
         answer = OllamaService().answer(prompt)
-        review_required = False
+        review_required = True
         confidence = min(0.9, 0.58 + 0.04 * len(citations))
     except Exception:
         excerpts = []

@@ -9,6 +9,8 @@ LABELS = {
     "medical_report": ("medical report", "postmortem", "મેડિકલ"),
     "fsl_report": ("forensic science", "fsl"),
     "cdr": ("call detail record", "cdr"),
+    "cctv_record": ("cctv", "camera export", "video recording"),
+    "case_diary": ("case diary", "investigation diary", "કેસ ડાયરી"),
     "chargesheet": ("charge sheet", "chargesheet", "આરોપનામું"),
 }
 

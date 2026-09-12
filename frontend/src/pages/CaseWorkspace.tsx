@@ -7,13 +7,15 @@ import { ProcessingView } from '../components/ProcessingView'
 import { AnalysisView } from './case/AnalysisView'
 import { AskCaseView } from './case/AskCaseView'
 import { DocumentsView } from './case/DocumentsView'
+import { DefenseView } from './case/DefenseView'
+import { PrecedentsView } from './case/PrecedentsView'
 import { EvidenceView } from './case/EvidenceView'
 import { GraphView } from './case/GraphView'
 import { OverviewView } from './case/OverviewView'
 import { TimelineView } from './case/TimelineView'
 import type { CaseTab, Citation } from '../types'
 
-const tabs: CaseTab[] = ['Overview', 'Analysis', 'Evidence', 'Timeline', 'Graph', 'Documents', 'Ask Case']
+const tabs: CaseTab[] = ['Overview', 'Analysis', 'Defense', 'Precedents', 'Evidence', 'Timeline', 'Graph', 'Documents', 'Ask Case']
 
 export function CaseWorkspace({ caseId, initialCitation, onCitation }: { caseId: string; initialCitation?: Citation; onCitation: (value: Citation) => void }) {
   const [tab, setTab] = useState<CaseTab>(initialCitation ? 'Documents' : 'Overview')
@@ -23,7 +25,7 @@ export function CaseWorkspace({ caseId, initialCitation, onCitation }: { caseId:
   useEffect(() => { if (initialCitation) { setCitation(initialCitation); setTab('Documents') } }, [initialCitation])
   const openCitation = (value: Citation) => { setCitation(value); onCitation(value); setTab('Documents') }
   if (caseQuery.isLoading || status.isLoading) return <Loading />
-  if (!caseQuery.data) return <div className="p-10 text-sm text-red-700">Case could not be loaded.</div>
+  if (caseQuery.isError || !caseQuery.data) return <div role="alert" className="p-10 text-sm text-red-700">This case could not be loaded. It may have been removed during a database reset. Open an existing case from Cases in the sidebar.</div>
   if (status.data && ['running', 'queued'].includes(status.data.state)) return <ProcessingView status={status.data} />
   const item = caseQuery.data
   return (
@@ -37,6 +39,8 @@ export function CaseWorkspace({ caseId, initialCitation, onCitation }: { caseId:
         {status.data?.state === 'error' && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-800">Processing error: {status.data.error}</div>}
         {tab === 'Overview' && <OverviewView caseId={caseId} status={status.data} onCitation={openCitation} onTab={setTab} />}
         {tab === 'Analysis' && <AnalysisView caseId={caseId} onCitation={openCitation} onGraph={() => setTab('Graph')} />}
+        {tab === 'Defense' && <DefenseView caseId={caseId} onCitation={openCitation} />}
+        {tab === 'Precedents' && <PrecedentsView caseId={caseId} />}
         {tab === 'Evidence' && <EvidenceView caseId={caseId} onCitation={openCitation} />}
         {tab === 'Timeline' && <TimelineView caseId={caseId} onCitation={openCitation} />}
         {tab === 'Graph' && <GraphView caseId={caseId} onCitation={openCitation} />}

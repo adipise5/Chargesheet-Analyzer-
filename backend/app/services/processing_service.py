@@ -87,8 +87,15 @@ def process_case(case_id: str) -> None:
             pdf = fitz.open(path)
             sample = "".join(pdf[i].get_text("text") for i in range(min(4, pdf.page_count)))
             category, _ = classify_document(sample)
-            db.execute("UPDATE documents SET category=?,status='processing' WHERE id=?", (category, document["id"]))
+            role_from_category = {"chargesheet": "draft_chargesheet", "fir": "fir", "witness_statement": "witness_statement",
+                                  "medical_report": "medical_report", "fsl_report": "forensic_report", "cdr": "supporting_record",
+                                  "cctv_record": "cctv_record", "case_diary": "case_diary", "seizure_memo": "seizure_memo"}
+            role = document.get("role", "supporting_record")
+            if role == "supporting_record" and category in role_from_category:
+                role = role_from_category[category]
+            db.execute("UPDATE documents SET category=?,role=?,status='processing' WHERE id=?", (category, role, document["id"]))
             document["category"] = category
+            document["role"] = role
             for index, page in enumerate(pdf):
                 image_path = None
                 native = digital.extract_page(page)

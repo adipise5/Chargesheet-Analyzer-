@@ -37,7 +37,7 @@ def list_cases() -> list[dict]:
     return rows
 
 
-def save_document(case_id: str, filename: str | None, data: bytes) -> dict:
+def save_document(case_id: str, filename: str | None, data: bytes, role: str = "supporting_record") -> dict:
     if not get_case(case_id):
         raise LookupError("Case not found")
     validate_pdf_bytes(data, filename, settings.max_upload_bytes)
@@ -54,9 +54,12 @@ def save_document(case_id: str, filename: str | None, data: bytes) -> dict:
         path.unlink(missing_ok=True)
         raise
     display_name = safe_display_filename(filename)
+    allowed_roles = {"draft_chargesheet", "fir", "case_diary", "witness_statement", "medical_report",
+                     "forensic_report", "cctv_record", "seizure_memo", "supporting_record"}
+    role = role if role in allowed_roles else "supporting_record"
     db.execute(
-        "INSERT INTO documents(id,case_id,filename,stored_name,category,page_count,sha256,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
-        (document_id, case_id, display_name, path.name, "unknown", inspection["page_count"], digest, "uploaded", now_iso()),
+        "INSERT INTO documents(id,case_id,filename,stored_name,category,page_count,sha256,status,role,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+        (document_id, case_id, display_name, path.name, "unknown", inspection["page_count"], digest, "uploaded", role, now_iso()),
     )
     db.execute("UPDATE cases SET status='uploaded',updated_at=? WHERE id=?", (now_iso(), case_id))
     db.audit("file_uploaded", case_id, {"document_id": document_id, "count": inspection["page_count"]})
