@@ -1,4 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../api/client'
 
 export type AppLanguage = 'english' | 'gujarati'
 type LanguageContextValue = { language: AppLanguage; setLanguage: (language: AppLanguage) => void; toggleLanguage: () => void; t: (english: string) => string }
@@ -28,4 +30,18 @@ export function useLanguage() {
   const value = useContext(LanguageContext)
   if (!value) throw new Error('useLanguage must be used inside LanguageProvider')
   return value
+}
+
+export function useTranslatedTexts(texts: Array<string | undefined>) {
+  const { language } = useLanguage()
+  const stableTexts = texts.filter((text): text is string => Boolean(text))
+  const textKey = stableTexts.join('\u0000')
+  const query = useQuery({
+    queryKey: ['translations', language, stableTexts],
+    queryFn: () => api.translate(stableTexts, language),
+    enabled: language === 'english' && stableTexts.length > 0,
+    staleTime: Infinity,
+  })
+  const translated = useMemo(() => new Map(textKey ? textKey.split('\u0000').map((text, index) => [text, query.data?.translations[index] || text]) : []), [textKey, query.data?.translations])
+  return { translated, translating: language === 'english' && query.isLoading }
 }
