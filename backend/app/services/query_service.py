@@ -6,6 +6,7 @@ from app.graph.repository import graph_repository
 from app.rag.context_builder import build_context
 from app.rag.hybrid_retriever import HybridRetriever
 from app.services.ollama_service import OllamaService
+from app.services.analysis_service import get_findings
 from app.storage.sqlite import db
 
 
@@ -43,10 +44,31 @@ def _unlinked_evidence_response(graph: dict) -> dict | None:
             "review_required": True, "retrieval": []}
 
 
+def _single_source_response(case_id: str) -> dict:
+    findings = [item for item in get_findings(case_id) if item.get("type") == "weak_point" and len(item.get("supporting_sources", [])) == 1]
+    if not findings:
+        return {"answer": "No claim currently has a stored single-source weakness finding. This does not prove corroboration; review the source-linked findings and original records.",
+                "citations": [], "graph_paths": [], "confidence": 0.85, "review_required": True, "retrieval": []}
+    citations, seen, lines = [], set(), ["Stored analysis identifies these claims as relying on one source passage:"]
+    for finding in findings[:12]:
+        source = finding["supporting_sources"][0]
+        lines.append(f"• {finding.get('title', 'Extracted claim')} — verify independent corroboration.")
+        key = (source.get("document_id"), source.get("page"), source.get("chunk_id"))
+        if key not in seen:
+            seen.add(key); citations.append(source)
+    return {"answer": "\n".join(lines), "citations": citations, "graph_paths": [], "confidence": 0.9,
+            "review_required": True, "retrieval": []}
+
+
 def query_case(case_id: str, question: str) -> dict:
     chunks = db.all("SELECT c.*,d.filename AS document_label FROM chunks c JOIN documents d ON d.id=c.document_id WHERE c.case_id=?", (case_id,))
     graph = graph_repository.data(case_id)
     normalized_question = question.lower()
+    if "single source" in normalized_question or "only one source" in normalized_question or "one source" in normalized_question:
+        deterministic = _single_source_response(case_id)
+        db.audit("question_asked", case_id, {"count": 1})
+        db.audit("sources_retrieved", case_id, {"count": len(deterministic["citations"])})
+        return deterministic
     if "evidence" in normalized_question and ("unlinked" in normalized_question or "not linked" in normalized_question):
         deterministic = _unlinked_evidence_response(graph)
         if deterministic:

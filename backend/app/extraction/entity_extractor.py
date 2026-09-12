@@ -11,8 +11,14 @@ PATTERNS = {
     "Device": re.compile(r"(?<!\d)(?:\+91[- ]?)?[6-9]\d{9}(?!\d)"),
     # Gujarati legal documents commonly print the section number using Gujarati
     # numerals (for example, ``કલમ ૨૨૩``). Keep the original span for review.
-    "LegalSection": re.compile(rf"(?:section|sec\.?|કલમ)\s*([{NUMERALS}]{{1,4}}[A-Za-z]?)", re.I),
 }
+LEGAL_SECTION_BLOCK = re.compile(
+    rf"(?<![A-Za-z])(?:sections?|secs?\.?|ss\.?)(?![A-Za-z])\s*:?[ \t]*"
+    rf"([{NUMERALS}]{{1,4}}[A-Za-z]?(?:[ \t]*(?:,|and|&)\s*[{NUMERALS}]{{1,4}}[A-Za-z]?)*)(?![A-Za-z])|"
+    rf"(કલમ)\s*:?[ \t]*([{NUMERALS}]{{1,4}}[A-Za-z]?)",
+    re.I,
+)
+LEGAL_SECTION_NUMBER = re.compile(rf"(?<![{NUMERALS}A-Za-z])([{NUMERALS}]{{1,4}}[A-Za-z]?)(?![{NUMERALS}A-Za-z])")
 
 PERSON_PATTERNS = (
     ("Accused", re.compile(r"(?:name\s*&\s*age|name\s+of\s+accused)\s*:\s*([A-Z][A-Z .'-]{1,80})", re.I)),
@@ -31,6 +37,18 @@ def extract_entities(text: str, chunk_id: str) -> list[dict]:
                 "subtype": kind.lower(),
                 "label": label,
                 "confidence": 0.93,
+                "data": {"source_chunk": chunk_id, "evidence_span": label},
+            })
+    for block in LEGAL_SECTION_BLOCK.finditer(text):
+        number_text = block.group(1) or block.group(3)
+        if not number_text:
+            continue
+        prefix = "કલમ" if block.group(2) else block.group(0)[:block.start(1) - block.start()].strip()
+        for number in LEGAL_SECTION_NUMBER.finditer(number_text):
+            label = f"{prefix} {number.group(1)}"
+            found.append({
+                "id": f"legalsection_{uuid.uuid5(uuid.NAMESPACE_URL, chunk_id + ':LegalSection:' + label.casefold()).hex[:12]}",
+                "kind": "LegalSection", "subtype": "legal_section", "label": label, "confidence": 0.93,
                 "data": {"source_chunk": chunk_id, "evidence_span": label},
             })
     for kind, pattern in PERSON_PATTERNS:

@@ -2,11 +2,13 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { AlertCircle, CheckCircle2, FileText, FolderPlus, LockKeyhole, UploadCloud, X } from 'lucide-react'
 import { api } from '../api/client'
 import type { Case } from '../types'
+import { useQueryClient } from '@tanstack/react-query'
 
 const ACCEPTED_EXTENSIONS = ['.pdf', '.doc', '.docx']
 const ACCEPTED_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 
 export function NewAnalysis({ onCreated }: { onCreated: (id: string) => void }) {
+  const queryClient = useQueryClient()
   const input = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [caseNumber, setCaseNumber] = useState('')
@@ -55,6 +57,7 @@ export function NewAnalysis({ onCreated }: { onCreated: (id: string) => void }) 
       }
       await api.upload(targetCaseId, file, role)
       await api.process(targetCaseId)
+      await queryClient.invalidateQueries({ queryKey: ['cases'] })
       onCreated(targetCaseId)
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Upload failed') } finally { setBusy(false) }
   }

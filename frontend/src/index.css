@@ -13,3 +13,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .chip { @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold; }
 .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
 
+@media (max-width: 767px) {
+  .app-sidebar { position: sticky; inset: auto; top: 0; width: 100%; height: auto; }
+  .sidebar-brand, .sidebar-recents { display: none; }
+  .sidebar-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .25rem; padding: .5rem; }
+  .sidebar-nav-button { justify-content: center; gap: .25rem; padding: .6rem .2rem; font-size: .68rem; }
+  .sidebar-footer { position: absolute; right: .5rem; top: 100%; border: 0; padding: .35rem; }
+  .sidebar-footer > :not(button) { display: none; }
+  .sidebar-footer button { width: auto; background: #0b1f33; padding: .55rem; font-size: 0; box-shadow: 0 2px 8px rgb(15 23 42 / .2); }
+  .sidebar-footer button svg { width: 16px; height: 16px; }
+  .app-content { margin-left: 0; }
+}
+

@@ -34,7 +34,7 @@ export default function App() {
   return (
     <div>
       <Sidebar cases={cases.data || []} selectedCaseId={caseId} screen={screen} onDashboard={() => setScreen('dashboard')} onCases={() => setScreen('cases')} onAnalytics={() => setScreen('analytics')} onNew={() => setScreen('new')} onCase={openCase} onPurge={purge} />
-      <div className="ml-[258px] min-h-screen">
+      <div className="app-content ml-[258px] min-h-screen">
         {screen === 'dashboard' && <Dashboard cases={cases.data || []} onCase={openCase} onNew={() => setScreen('new')} onDemo={() => demo.mutate()} />}
         {screen === 'cases' && <Cases cases={cases.data || []} onCase={openCase} onNew={() => setScreen('new')} onReload={() => client.invalidateQueries({ queryKey: ['cases'] })} />}
         {screen === 'analytics' && <AnalyticsDashboard />}

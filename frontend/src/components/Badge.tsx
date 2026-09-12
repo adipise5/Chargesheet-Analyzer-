@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, CircleDashed, ShieldCheck } from 'lucide-react'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const palettes: Record<string, string> = {
   STRONGLY_CORROBORATED: 'border-emerald-200 bg-emerald-50 text-emerald-800',
@@ -10,7 +11,8 @@ const palettes: Record<string, string> = {
 }
 
 export function Badge({ value }: { value: string }) {
+  const { t } = useLanguage()
   const Icon = value === 'STRONGLY_CORROBORATED' ? ShieldCheck : value === 'CONFLICTING_EVIDENCE' ? AlertTriangle : value === 'verified' ? CheckCircle2 : CircleDashed
-  return <span className={`chip ${palettes[value] || 'border-slate-200 bg-slate-50 text-slate-700'}`}><Icon size={12} />{value.replaceAll('_', ' ')}</span>
+  return <span className={`chip ${palettes[value] || 'border-slate-200 bg-slate-50 text-slate-700'}`}><Icon size={12} />{t(value.replaceAll('_', ' '))}</span>
 }
 

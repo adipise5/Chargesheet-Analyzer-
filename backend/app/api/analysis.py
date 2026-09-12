@@ -118,5 +118,5 @@ def timeline(case_id: str):
                         "event": node["label"], "people": [], "location": "Training Square" if "Training" in node["label"] else None,
                         "category": node["metadata"].get("subtype", "investigation"), "confidence": node["confidence"],
                         "uncertain": node["confidence"] < .8, "citation": citations[0] if citations else None})
-    return results
+    return sorted(results, key=lambda item: (item.get("date") or "9999-99-99", item.get("time") or "99:99", item["id"]))
 
