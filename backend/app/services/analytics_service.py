@@ -12,6 +12,14 @@ from collections import Counter, defaultdict
 from app.storage.sqlite import db
 
 
+GUJARATI_DIGITS = str.maketrans("૦૧૨૩૪૫૬૭૮૯", "0123456789")
+
+
+def _ascii_digits(value: str) -> str:
+    """Normalize Gujarati numerals for aggregation without changing source text."""
+    return value.translate(GUJARATI_DIGITS)
+
+
 def global_summary() -> dict:
     """Top-level statistics across all cases."""
     cases_count = db.one("SELECT COUNT(*) count FROM cases WHERE is_demo=0", ())["count"]
@@ -71,7 +79,7 @@ def temporal_distribution() -> list[dict]:
     for row in event_rows:
         try:
             data = json.loads(row["data_json"])
-            date = data.get("date", "")
+            date = _ascii_digits(str(data.get("date", "")))
             # Try DD/MM/YYYY or DD-MM-YYYY format
             m = re.match(r"(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})", date)
             if m:

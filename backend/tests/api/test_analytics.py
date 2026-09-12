@@ -37,3 +37,16 @@ def test_cross_case_analytics_aggregates_non_demo_records():
     assert findings_summary() == [{"type": "contradiction", "count": 1}]
     assert {item["label"] for item in entity_network()} == {"A-1"}
     assert temporal_distribution()
+
+
+def test_temporal_analytics_merges_ascii_and_gujarati_dates():
+    case = create_case({"case_number": "DATE-NORMALIZATION", "police_station": "Training"})
+    db.execute("INSERT INTO objects(id,case_id,kind,subtype,label,data_json,confidence) VALUES(?,?,?,?,?,?,?)",
+               ("event-ascii", case["id"], "Event", "dated_event", "ASCII date", '{"date":"13/03/2026"}', 0.9))
+    db.execute("INSERT INTO objects(id,case_id,kind,subtype,label,data_json,confidence) VALUES(?,?,?,?,?,?,?)",
+               ("event-gujarati", case["id"], "Event", "dated_event", "Gujarati date", '{"date":"૧૩/૦૩/૨૦૨૬"}', 0.9))
+
+    result = temporal_distribution()
+    assert {item["month"] for item in result} == {"2026-03", case["created_at"][:7]}
+    march = next(item for item in result if item["month"] == "2026-03")
+    assert march["crime_events"] == 2
