@@ -3,6 +3,7 @@ import pytest
 
 from app.main import app
 from app.storage.sqlite import db
+from app.services.case_service import create_case, delete_case, save_document
 
 
 def test_major_demo_routes():
@@ -40,3 +41,25 @@ def test_ocr_review_preserves_original_and_rebuilds():
         assert row["original_text"] == original
         assert row["corrected_text"] == corrected
         assert row["review_status"] == "human_corrected"
+
+
+def test_delete_case_removes_database_rows_and_files(tmp_path, monkeypatch):
+    import fitz
+    from types import SimpleNamespace
+    import app.services.case_service as case_service
+
+    case_root = tmp_path / "cases"
+    monkeypatch.setattr(case_service, "settings", SimpleNamespace(cases_dir=case_root, max_upload_bytes=250 * 1024 * 1024))
+    case = create_case({"case_number": "DELETE-ME", "police_station": "Training"})
+    pdf = fitz.open()
+    page = pdf.new_page()
+    page.insert_text((40, 40), "Synthetic disposable document")
+    payload = pdf.tobytes()
+    pdf.close()
+    document = save_document(case["id"], "disposable.pdf", payload)
+    stored = case_root / case["id"] / "documents" / f"{document['id']}.pdf"
+    assert stored.exists()
+
+    assert delete_case(case["id"])
+    assert db.one("SELECT 1 FROM cases WHERE id=?", (case["id"],)) is None
+    assert not stored.exists()

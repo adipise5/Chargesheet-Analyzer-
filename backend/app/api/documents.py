@@ -19,7 +19,7 @@ async def upload_document(case_id: str, file: UploadFile = File(...), role: str 
     except LookupError as exc:
         raise HTTPException(404, detail={"code": "CASE_NOT_FOUND", "message": str(exc)}) from exc
     except (UploadValidationError, ValueError) as exc:
-        raise HTTPException(422, detail={"code": "INVALID_PDF", "message": str(exc)}) from exc
+        raise HTTPException(422, detail={"code": "INVALID_DOCUMENT", "message": str(exc)}) from exc
 
 
 @router.get("/documents")
@@ -34,10 +34,16 @@ def document_file(case_id: str, document_id: str):
     document = db.one("SELECT * FROM documents WHERE id=? AND case_id=?", (document_id, case_id))
     if not document:
         raise HTTPException(404, "Document not found")
-    path = storage.document_path(case_id, document_id)
+    stored_name = document.get("stored_name", "")
+    ext = Path(stored_name).suffix.lower() if stored_name else ".pdf"
+    path = storage.document_path(case_id, document_id, extension=ext)
+    if not path.exists():
+        path = storage.document_path(case_id, document_id)  # fallback to .pdf
     if not path.exists():
         raise HTTPException(404, "Stored document is unavailable")
-    return FileResponse(path, media_type="application/pdf", filename=document["filename"], content_disposition_type="inline")
+    mime_types = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".doc": "application/msword"}
+    media_type = mime_types.get(ext, "application/octet-stream")
+    return FileResponse(path, media_type=media_type, filename=document["filename"], content_disposition_type="inline")
 
 
 @router.get("/documents/{document_id}/pages/{page}")

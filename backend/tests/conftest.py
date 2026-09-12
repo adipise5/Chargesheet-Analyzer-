@@ -11,8 +11,8 @@ def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     db.path = tmp_path / "test.db"
     db.initialize()
 
-    def document_path(case_id: str, document_id: str) -> Path:
-        path = tmp_path / "cases" / case_id / "documents" / f"{document_id}.pdf"
+    def document_path(case_id: str, document_id: str, extension: str = ".pdf") -> Path:
+        path = tmp_path / "cases" / case_id / "documents" / f"{document_id}{extension}"
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
 

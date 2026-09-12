@@ -1,17 +1,18 @@
-import { Activity, FilePlus2, FolderKanban, Gauge, LockKeyhole, Settings, Shield, Sparkles } from 'lucide-react'
+import { Activity, BarChart3, FilePlus2, FolderKanban, Gauge, LockKeyhole, Settings, Shield, Sparkles } from 'lucide-react'
 import type { Case } from '../types'
 
 type Props = {
   cases: Case[]
   selectedCaseId?: string
-  screen: 'dashboard' | 'cases' | 'new' | 'case'
+  screen: 'dashboard' | 'cases' | 'analytics' | 'new' | 'case'
   onDashboard: () => void
   onCases: () => void
+  onAnalytics: () => void
   onNew: () => void
   onCase: (id: string) => void
 }
 
-export function Sidebar({ cases, selectedCaseId, screen, onDashboard, onCases, onNew, onCase }: Props) {
+export function Sidebar({ cases, selectedCaseId, screen, onDashboard, onCases, onAnalytics, onNew, onCase }: Props) {
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex w-[258px] flex-col bg-navy text-slate-100">
       <div className="border-b border-white/10 px-5 py-5">
@@ -23,6 +24,7 @@ export function Sidebar({ cases, selectedCaseId, screen, onDashboard, onCases, o
       <nav className="space-y-1 px-3 py-4" aria-label="Primary">
         <NavButton active={screen === 'dashboard'} icon={<Gauge size={17} />} label="Dashboard" onClick={onDashboard} />
         <NavButton active={screen === 'cases'} icon={<FolderKanban size={17} />} label="Cases" onClick={onCases} />
+        <NavButton active={screen === 'analytics'} icon={<BarChart3 size={17} />} label="Analytics" onClick={onAnalytics} />
         <NavButton active={screen === 'new'} icon={<FilePlus2 size={17} />} label="New Analysis" onClick={onNew} />
       </nav>
       <div className="px-5 pt-3 text-[10px] font-bold uppercase tracking-[.18em] text-slate-500">Recent cases</div>

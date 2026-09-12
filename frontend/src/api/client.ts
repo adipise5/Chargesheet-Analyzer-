@@ -17,6 +17,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   cases: () => request<Case[]>('/cases'),
   case: (id: string) => request<Case>(`/cases/${id}`),
+  deleteCase: (id: string) => request(`/cases/${id}`, { method: 'DELETE' }),
   createCase: (data: { case_number: string; police_station: string; language: string }) => request<Case>('/cases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
   loadDemo: () => request<Case>('/demo', { method: 'POST' }),
   upload: async (caseId: string, file: File, role = 'supporting_record') => { const data = new FormData(); data.append('file', file); data.append('role', role); return request<DocumentRecord>(`/cases/${caseId}/documents`, { method: 'POST', body: data }) },
@@ -37,5 +38,15 @@ export const api = {
   updateReview: (caseId: string, pageId: string, status: string, corrected_text?: string) => request(`/cases/${caseId}/ocr/review/${pageId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, corrected_text }) }),
   query: (caseId: string, question: string) => request<{ answer: string; citations: Citation[]; confidence: number; review_required: boolean }>(`/cases/${caseId}/query`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) }),
   health: () => request<{ status: string; llm_model: string; embedding_model: string; ollama: { available: boolean; missing: string[] }; tesseract: { available: boolean; message: string }; neo4j: { available: boolean; mode: string } }>('/system/health'),
+  caseByNumber: (caseNumber: string) => request<Case>(`/cases/by-number/${encodeURIComponent(caseNumber)}`).catch(() => null),
+  // Analytics endpoints
+  analyticsSummary: () => request<Record<string, number>>('/analytics/summary'),
+  analyticsCrimeTypes: () => request<Array<{ section: string; count: number }>>('/analytics/crime-types'),
+  analyticsTemporal: () => request<Array<{ month: string; cases_registered: number; crime_events: number }>>('/analytics/temporal'),
+  analyticsHotspots: () => request<Array<{ station: string; count: number }>>('/analytics/hotspots'),
+  analyticsCaseStatus: () => request<Array<{ status: string; count: number }>>('/analytics/case-status'),
+  analyticsEvidenceProfile: () => request<Array<{ type: string; count: number }>>('/analytics/evidence-profile'),
+  analyticsEntityNetwork: () => request<Array<{ label: string; kind: string; case_count: number }>>('/analytics/entity-network'),
+  analyticsFindings: () => request<Array<{ type: string; count: number }>>('/analytics/findings-summary'),
+  analyticsDocRoles: () => request<Array<{ role: string; count: number }>>('/analytics/document-roles'),
 }
-
