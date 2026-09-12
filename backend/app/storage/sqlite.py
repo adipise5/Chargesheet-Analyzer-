@@ -16,7 +16,8 @@ PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS cases (
   id TEXT PRIMARY KEY, case_number TEXT NOT NULL, police_station TEXT NOT NULL,
   language TEXT NOT NULL, status TEXT NOT NULL, is_demo INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+  summary_json TEXT, summary_fingerprint TEXT
 );
 CREATE TABLE IF NOT EXISTS documents (
   id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
@@ -91,6 +92,11 @@ class Database:
             columns = {row[1] for row in connection.execute("PRAGMA table_info(documents)").fetchall()}
             if "role" not in columns:
                 connection.execute("ALTER TABLE documents ADD COLUMN role TEXT NOT NULL DEFAULT 'supporting_record'")
+            case_columns = {row[1] for row in connection.execute("PRAGMA table_info(cases)").fetchall()}
+            if "summary_json" not in case_columns:
+                connection.execute("ALTER TABLE cases ADD COLUMN summary_json TEXT")
+            if "summary_fingerprint" not in case_columns:
+                connection.execute("ALTER TABLE cases ADD COLUMN summary_fingerprint TEXT")
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:

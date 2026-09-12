@@ -4,7 +4,7 @@ import json
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.agents.summary_agent import case_summary
+from app.agents.summary_agent import case_summary, summary_fingerprint
 from app.graph.repository import graph_repository
 from app.extraction.date_utils import normalize_date
 from app.services.analysis_service import get_findings
@@ -40,7 +40,23 @@ def overview(case_id: str):
     graph = graph_repository.data(case_id)
     source_text = "\n\n".join(row["text"] for row in db.all("SELECT text FROM chunks WHERE case_id=? ORDER BY document_id,page_number LIMIT 24", (case_id,)))
     important = [node for node in graph["nodes"] if node["type"] in {"Accused", "Witness", "Evidence", "Event"}][:8]
-    return {"case": case, "metrics": metrics, "summary": case_summary(case, summary_counts, source_text),
+    documents = db.all("SELECT id,sha256,role,category,page_count FROM documents WHERE case_id=? ORDER BY id", (case_id,))
+    fingerprint = summary_fingerprint(case, summary_counts, source_text, documents)
+    cached = db.one("SELECT summary_json FROM cases WHERE id=? AND summary_fingerprint=?", (case_id, fingerprint))
+    summary_cached = False
+    summary = None
+    if cached and cached.get("summary_json"):
+        try:
+            candidate = json.loads(cached["summary_json"])
+            if isinstance(candidate, dict) and isinstance(candidate.get("english"), str) and isinstance(candidate.get("gujarati"), str):
+                summary = candidate
+                summary_cached = True
+        except (TypeError, json.JSONDecodeError):
+            summary = None
+    if summary is None:
+        summary = case_summary(case, summary_counts, source_text)
+        db.execute("UPDATE cases SET summary_json=?,summary_fingerprint=? WHERE id=?", (json.dumps(summary, ensure_ascii=False), fingerprint, case_id))
+    return {"case": case, "metrics": metrics, "summary": summary, "summary_cached": summary_cached,
             "key_entities": important, "priority_findings": get_findings(case_id)[:4]}
 
 

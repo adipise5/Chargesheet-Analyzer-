@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+
 from pydantic import BaseModel, Field
 
 from app.services.ollama_service import OllamaService
@@ -8,6 +11,22 @@ from app.services.ollama_service import OllamaService
 class BilingualSummary(BaseModel):
     english: str = Field(min_length=1, max_length=1200)
     gujarati: str = Field(min_length=1, max_length=1600)
+
+
+def summary_fingerprint(case: dict, counts: dict, source_text: str, documents: list[dict] | None = None) -> str:
+    """Return a stable cache key for the current case content and structure."""
+    document_signature = [
+        {key: document.get(key) for key in ("id", "sha256", "role", "category", "page_count")}
+        for document in (documents or [])
+    ]
+    payload = {
+        "case": {key: case.get(key) for key in ("id", "case_number", "police_station", "language")},
+        "counts": counts,
+        "documents": document_signature,
+        "source_text": source_text[:12000],
+    }
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _fallback(case: dict, counts: dict) -> dict[str, str]:
