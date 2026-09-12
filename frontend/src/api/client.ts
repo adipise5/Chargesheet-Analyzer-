@@ -39,7 +39,7 @@ export const api = {
   query: (caseId: string, question: string) => request<{ answer: string; citations: Citation[]; confidence: number; review_required: boolean }>(`/cases/${caseId}/query`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) }),
   health: () => request<{ status: string; llm_model: string; embedding_model: string; ollama: { available: boolean; missing: string[] }; tesseract: { available: boolean; message: string }; neo4j: { available: boolean; mode: string } }>('/system/health'),
   purgeData: () => request<{ status: string; removed: Record<string, number> }>('/system/purge', { method: 'DELETE' }),
-  translate: (texts: string[], target: 'english' | 'gujarati') => request<{ translations: string[] }>('/system/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texts, target }) }),
+  translate: (texts: string[], target: 'english' | 'gujarati') => request<{ translations: string[]; fallback?: boolean }>('/system/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texts, target }) }),
   caseByNumber: (caseNumber: string) => request<Case>(`/cases/by-number/${encodeURIComponent(caseNumber)}`).catch(() => null),
   // Analytics endpoints
   analyticsSummary: () => request<Record<string, number>>('/analytics/summary'),

@@ -34,7 +34,21 @@ INPUT:\n{json.dumps(payload.texts, ensure_ascii=False)}"""
         translated = json.loads(raw[start:end + 1]) if start >= 0 and end > start else None
         if not isinstance(translated, list) or len(translated) != len(payload.texts):
             raise ValueError("translation response shape mismatch")
-        return {"translations": [str(value) for value in translated]}
+        # Small local models occasionally wrap one answer in an extra JSON
+        # array. Accept only the unambiguous one-item form; never stringify a
+        # list into UI text such as "['translated text']".
+        normalized = []
+        for value in translated:
+            if isinstance(value, str):
+                cleaned = value.strip()
+                if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {'"', "'"}:
+                    cleaned = cleaned[1:-1].strip()
+                normalized.append(cleaned)
+            elif isinstance(value, list) and len(value) == 1 and isinstance(value[0], str):
+                normalized.append(value[0].strip())
+            else:
+                raise ValueError("translation item is not a string")
+        return {"translations": normalized}
     except Exception:
         # Never hide source material when the local model is unavailable.
         return {"translations": payload.texts, "fallback": True}

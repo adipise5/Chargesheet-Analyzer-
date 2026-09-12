@@ -3,11 +3,15 @@ from __future__ import annotations
 import re
 import uuid
 
+GUJARATI_NUMERALS = "૦૧૨૩૪૫૬૭૮૯"
+NUMERALS = f"0-9{GUJARATI_NUMERALS}"
 
 PATTERNS = {
     "Vehicle": re.compile(r"\bGJ[- ]?\d{1,2}[- ]?[A-Z]{1,3}[- ]?\d{3,4}\b", re.I),
     "Device": re.compile(r"(?<!\d)(?:\+91[- ]?)?[6-9]\d{9}(?!\d)"),
-    "LegalSection": re.compile(r"(?:section|sec\.?|કલમ)\s*([0-9]{1,4}[A-Za-z]?)", re.I),
+    # Gujarati legal documents commonly print the section number using Gujarati
+    # numerals (for example, ``કલમ ૨૨૩``). Keep the original span for review.
+    "LegalSection": re.compile(rf"(?:section|sec\.?|કલમ)\s*([{NUMERALS}]{{1,4}}[A-Za-z]?)", re.I),
 }
 
 PERSON_PATTERNS = (

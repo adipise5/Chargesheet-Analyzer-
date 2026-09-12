@@ -18,3 +18,11 @@ def test_draft_without_expected_records_is_flagged():
     documents = [{"id": "draft", "filename": "draft.pdf", "role": "draft_chargesheet"}]
     findings = completeness_findings(documents, [chunk("draft", "Accused A1 is charged under section 302")])
     assert {item["related_document_roles"][1] for item in findings} >= {"fir", "medical_report", "forensic_report"}
+
+
+def test_equivalent_date_spellings_are_not_reported_as_a_contradiction():
+    documents = [{"id": "draft", "filename": "draft.pdf", "role": "draft_chargesheet"},
+                 {"id": "fir", "filename": "fir.pdf", "role": "fir"}]
+    findings = comparative_findings(documents, [chunk("draft", "Incident date 13.03.2026"),
+                                                chunk("fir", "Incident date ૧૩/૦૩/૨૦૨૬")])
+    assert not any(item["type"] == "contradiction" and "date" in item["title"] for item in findings)

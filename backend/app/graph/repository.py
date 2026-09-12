@@ -48,8 +48,13 @@ class GraphRepository(GraphRepositoryInterface):
         nodes = []
         for row in db.all("SELECT * FROM objects WHERE case_id=?", (case_id,)):
             data = json.loads(row["data_json"])
+            # Keep the normalized database subtype available to API views.
+            # Extractors store it as the object column, not inside data_json;
+            # dropping it makes evidence filters and timeline categories lose
+            # their type information after graph reconstruction.
+            metadata = {**data, "subtype": row["subtype"]}
             nodes.append({"id": row["id"], "type": row["kind"], "label": row["label"],
-                          "aliases": data.get("aliases", []), "confidence": row["confidence"], "metadata": data})
+                          "aliases": data.get("aliases", []), "confidence": row["confidence"], "metadata": metadata})
         edges = []
         for row in db.all("SELECT * FROM relations WHERE case_id=?", (case_id,)):
             edges.append({"id": row["id"], "source": row["source_id"], "target": row["target_id"],

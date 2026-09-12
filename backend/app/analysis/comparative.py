@@ -4,16 +4,25 @@ import re
 import uuid
 from collections import defaultdict
 
+from app.extraction.date_utils import GUJARATI_DIGITS, normalize_date
+
 
 FIELD_PATTERNS = {
     "vehicle number": re.compile(r"\bGJ[- ]?\d{1,2}[- ]?[A-Z]{1,3}[- ]?\d{3,4}\b", re.I),
-    "date": re.compile(r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b"),
+    "date": re.compile(r"(?<!\w)[0-9૦૧૨૩૪૫૬૭૮૯]{1,4}\s*[/.-]\s*[0-9૦૧૨૩૪૫૬૭૮૯]{1,2}\s*[/.-]\s*[0-9૦૧૨૩૪૫૬૭૮૯]{1,4}(?!\w)"),
     "time": re.compile(r"\b(?:[01]?\d|2[0-3]):[0-5]\d\b"),
     "mobile number": re.compile(r"(?<!\d)(?:\+91[- ]?)?[6-9]\d{9}(?!\d)"),
-    "legal section": re.compile(r"(?:section|sec\.?|કલમ)\s*([0-9]{1,4}[A-Za-z]?)", re.I),
+    "legal section": re.compile(r"(?:section|sec\.?|કલમ)\s*([0-9૦૧૨૩૪૫૬૭૮૯]{1,4}[A-Za-z]?)", re.I),
     "named person": re.compile(r"\b(?:Person|Accused|Witness|Complainant|Victim)\s+[A-Z][A-Za-z]{2,}(?:\s+[A-Z][A-Za-z]{2,})?\b"),
     "location": re.compile(r"\b(?:at|near|in|from|to)\s+([A-Z][A-Za-z]{2,}(?:\s+[A-Z][A-Za-z]{2,}){0,3})"),
 }
+
+
+def _canonical_value(field: str, value: str) -> str:
+    """Compare equivalent source spellings without hiding the source span."""
+    if field == "date":
+        return normalize_date(value) or value.translate(GUJARATI_DIGITS).replace(" ", "").upper()
+    return value.translate(GUJARATI_DIGITS).replace(" ", "").upper()
 
 
 def _citation(chunk: dict, label: str) -> dict:
@@ -46,7 +55,7 @@ def comparative_findings(documents: list[dict], chunks: list[dict]) -> list[dict
         for document_id, doc_chunks in by_document.items():
             values = set()
             for chunk in doc_chunks:
-                values.update(value.upper().replace(" ", "") for value in pattern.findall(chunk["text"]))
+                values.update(_canonical_value(field, value) for value in pattern.findall(chunk["text"]))
                 for value in pattern.findall(chunk["text"]):
                     mentions.append((value, chunk))
             if values:
@@ -54,7 +63,7 @@ def comparative_findings(documents: list[dict], chunks: list[dict]) -> list[dict
         all_values = set().union(*values_by_doc.values()) if values_by_doc else set()
         if len(all_values) < 2 or len(values_by_doc) < 2:
             continue
-        relevant = [item for item in mentions if item[0].upper().replace(" ", "") in all_values]
+        relevant = [item for item in mentions if _canonical_value(field, item[0]) in all_values]
         sources = [_citation(chunk, f"{field.title()} mention — p{chunk['page_number']}") for _, chunk in relevant[:12]]
         differences = []
         for document_id, values in values_by_doc.items():

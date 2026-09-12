@@ -40,10 +40,26 @@ export function useTranslatedTexts(texts: Array<string | undefined>) {
   const query = useQuery({
     queryKey: ['translations', language, stableTexts],
     queryFn: async () => {
-      const batches: string[][] = []
-      for (let index = 0; index < uniqueTexts.length; index += 1) batches.push(uniqueTexts.slice(index, index + 1))
-      const responses = await Promise.all(batches.map(batch => api.translate(batch, language)))
-      return { translations: responses.flatMap(response => response.translations) }
+      // Ollama is a local single-model service. Parallel per-string calls can
+      // make it time out or return a malformed partial response, leaving a
+      // page half translated. Use small sequential batches and preserve order.
+      const translations: string[] = []
+      for (let index = 0; index < uniqueTexts.length; index += 6) {
+        const batch = uniqueTexts.slice(index, index + 6)
+        const response = await api.translate(batch, language)
+        if (!response.fallback || batch.length === 1) {
+          translations.push(...response.translations)
+          continue
+        }
+        // If one larger prompt is rejected by the local model, retry its
+        // items serially so one transient parse/timeout cannot leave a whole
+        // section in its original language.
+        for (const text of batch) {
+          const retry = await api.translate([text], language)
+          translations.push(retry.translations[0] || text)
+        }
+      }
+      return { translations }
     },
     enabled: language === 'english' && stableTexts.length > 0,
     staleTime: Infinity,
