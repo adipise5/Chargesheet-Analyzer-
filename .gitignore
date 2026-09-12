@@ -1,0 +1,54 @@
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python caches, test output, and coverage reports
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Frontend dependencies and generated build output
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# Runtime case uploads and local databases
+data/cases/*
+!data/cases/.gitkeep
+data/*.db
+data/*.db-*
+data/*.sqlite
+data/*.sqlite-*
+
+# Downloaded model weights (keep only the directory placeholder)
+models/*
+!models/.gitkeep
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db

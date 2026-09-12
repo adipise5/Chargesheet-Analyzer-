@@ -1,0 +1,41 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Document, Page, pdfjs } from 'react-pdf'
+import { ChevronLeft, ChevronRight, Edit3, FileText, Save, ScanText, ShieldCheck } from 'lucide-react'
+import { api } from '../../api/client'
+import { Badge } from '../../components/Badge'
+import { Loading } from '../../components/Loading'
+import type { Citation } from '../../types'
+import 'react-pdf/dist/Page/AnnotationLayer.css'
+import 'react-pdf/dist/Page/TextLayer.css'
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
+
+export function DocumentsView({ caseId, citation }: { caseId: string; citation?: Citation }) {
+  const client = useQueryClient()
+  const documents = useQuery({ queryKey: ['documents', caseId], queryFn: () => api.documents(caseId) })
+  const [documentId, setDocumentId] = useState(citation?.document_id)
+  const [pageNumber, setPageNumber] = useState(citation?.page || 1)
+  const [pdfPages, setPdfPages] = useState(0)
+  const [editing, setEditing] = useState(false)
+  const [corrected, setCorrected] = useState('')
+  const selectedId = citation?.document_id || documentId || documents.data?.[0]?.id
+  const selectedPage = citation?.page || pageNumber
+  useEffect(() => { if (citation) { setDocumentId(citation.document_id); setPageNumber(citation.page) } }, [citation])
+  const page = useQuery({ queryKey: ['page', caseId, selectedId, selectedPage], queryFn: () => api.page(caseId, selectedId!, selectedPage), enabled: !!selectedId })
+  const save = useMutation({ mutationFn: () => api.updateReview(caseId, page.data!.id, 'human_corrected', corrected), onSuccess: async () => { setEditing(false); await client.invalidateQueries({ queryKey: ['page', caseId] }); await client.invalidateQueries({ queryKey: ['overview', caseId] }) } })
+  const currentDocument = useMemo(() => documents.data?.find(value => value.id === selectedId), [documents.data, selectedId])
+  if (documents.isLoading) return <Loading />
+  if (!selectedId || !currentDocument) return <div className="panel grid min-h-72 place-items-center text-sm text-slate-400">No processed documents are available.</div>
+  const navigate = (next: number) => { setPageNumber(Math.max(1, Math.min(pdfPages || currentDocument.page_count, next))) }
+  return <div className="mx-auto max-w-[1450px]"><div className="mb-4 flex items-center justify-between"><div><div className="eyebrow">Source record</div><h2 className="mt-1.5 text-xl font-semibold">Document & OCR review</h2></div><div className="flex items-center gap-2"><button onClick={() => navigate(selectedPage - 1)} disabled={selectedPage <= 1} className="rounded-lg border border-slate-200 bg-white p-2 disabled:opacity-30"><ChevronLeft size={15} /></button><span className="min-w-20 text-center text-xs font-semibold">Page {selectedPage} / {pdfPages || currentDocument.page_count}</span><button onClick={() => navigate(selectedPage + 1)} disabled={selectedPage >= (pdfPages || currentDocument.page_count)} className="rounded-lg border border-slate-200 bg-white p-2 disabled:opacity-30"><ChevronRight size={15} /></button></div></div>
+    <div className="panel grid min-h-[720px] overflow-hidden lg:grid-cols-[220px_minmax(420px,1fr)_390px]">
+      <aside className="border-r border-slate-200 bg-slate-50/50 p-3"><div className="eyebrow px-2 py-2">Case documents</div>{documents.data?.map(doc => <button key={doc.id} onClick={() => { setDocumentId(doc.id); setPageNumber(1) }} className={`mt-1 flex w-full items-start gap-2 rounded-lg p-2.5 text-left ${selectedId === doc.id ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'hover:bg-white'}`}><FileText size={15} className="mt-0.5 shrink-0 text-sky-700" /><span className="min-w-0"><span className="block truncate text-xs font-semibold">{doc.filename}</span><span className="mt-1 block text-[10px] capitalize text-slate-400">{doc.category.replaceAll('_', ' ')} · {doc.page_count}p</span></span></button>)}</aside>
+      <section className="scrollbar-thin overflow-auto bg-slate-200/60 p-5"><div className="mx-auto w-fit overflow-hidden bg-white shadow-xl"><Document file={`/api/cases/${caseId}/documents/${selectedId}/file`} loading={<div className="grid h-[700px] w-[500px] place-items-center text-xs text-slate-400">Loading secure local PDF…</div>} onLoadSuccess={({ numPages }) => setPdfPages(numPages)} onLoadError={() => setPdfPages(currentDocument.page_count)}><Page pageNumber={selectedPage} width={590} /></Document></div></section>
+      <aside className="scrollbar-thin overflow-y-auto border-l border-slate-200 bg-white">{page.isLoading ? <Loading label="Loading page provenance…" /> : page.data && <div><div className="border-b border-slate-100 p-5"><div className="flex items-start justify-between"><div><div className="eyebrow">Page information</div><h3 className="mt-1.5 text-sm font-semibold">Page {page.data.page_number}</h3></div><Badge value={page.data.review_status === 'accepted' ? 'verified' : 'REVIEW_REQUIRED'} /></div><div className="mt-4 grid grid-cols-2 gap-2"><Meta label="Method" value={page.data.extraction_method} /><Meta label="Language" value={page.data.language} /><Meta label="Confidence" value={`${Math.round(page.data.ocr_confidence)}%`} /><Meta label="Blocks" value="Provenance linked" /></div></div><div className="p-5"><div className="flex items-center justify-between"><div className="flex items-center gap-2 text-xs font-semibold"><ScanText size={14} className="text-teal-700" />Extracted text</div><button onClick={() => { setCorrected(page.data.corrected_text || page.data.original_text); setEditing(v => !v) }} className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-700"><Edit3 size={13} />{editing ? 'Cancel' : 'Correct'}</button></div>{editing ? <><textarea value={corrected} onChange={e => setCorrected(e.target.value)} className="mt-3 h-80 w-full resize-y rounded-lg border border-slate-200 p-3 text-xs leading-5" /><button onClick={() => save.mutate()} disabled={save.isPending} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white"><Save size={13} />Save correction & rebuild</button></> : <div className="scrollbar-thin mt-3 max-h-[380px] overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-600">{page.data.corrected_text || page.data.original_text || 'No readable text was extracted.'}</div>}{page.data.tesseract_text && <details className="mt-4 text-xs"><summary className="cursor-pointer font-semibold text-slate-500">Original Tesseract transcript</summary><div className="mt-2 whitespace-pre-wrap rounded bg-slate-50 p-3 text-slate-500">{page.data.tesseract_text}</div></details>}{page.data.vision_candidate_text && <details className="mt-3 text-xs"><summary className="cursor-pointer font-semibold text-amber-700">Local vision candidate</summary><div className="mt-2 whitespace-pre-wrap rounded bg-amber-50 p-3 text-amber-800">{page.data.vision_candidate_text}</div></details>}<div className="mt-5 flex items-start gap-2 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-[11px] leading-5 text-emerald-800"><ShieldCheck className="mt-0.5 shrink-0" size={14} />Original extraction is retained when a human correction is saved.</div></div></div>}</aside>
+    </div>
+  </div>
+}
+
+function Meta({ label, value }: { label: string; value: string }) { return <div className="rounded-lg bg-slate-50 p-2.5"><div className="text-[9px] uppercase tracking-wide text-slate-400">{label}</div><div className="mt-1 truncate text-[11px] font-semibold text-slate-700">{value}</div></div> }
+

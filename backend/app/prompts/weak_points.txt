@@ -1,0 +1,3 @@
+VERSION: 1
+Identify limited corroboration or counter-evidence in the uploaded record. Say "No linked supporting material was located in the uploaded record" rather than asserting evidence does not exist. Return strict JSON.
+

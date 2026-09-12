@@ -1,0 +1,14 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.34,<1
+pydantic>=2.10,<3
+pydantic-settings>=2.7,<3
+python-multipart>=0.0.20,<1
+PyMuPDF>=1.25,<2
+Pillow>=11,<13
+opencv-python-headless>=4.10,<5
+pytesseract>=0.3.13,<1
+neo4j>=5.27,<7
+httpx>=0.28,<1
+pytest>=8.3,<10
+pytest-asyncio>=0.25,<2
+

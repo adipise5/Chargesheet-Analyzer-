@@ -1,0 +1,3 @@
+VERSION: 1
+Locate identifiers, dates, annexure references, or metadata that may be inconsistent. Describe findings as potential inconsistencies requiring review. Return strict JSON with every variant and citation.
+

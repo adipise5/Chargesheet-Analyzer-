@@ -1,0 +1,29 @@
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { AlertTriangle, ArrowUpRight, CheckCircle2, Link2Off, Scale, SearchCheck } from 'lucide-react'
+import { api } from '../../api/client'
+import { Badge } from '../../components/Badge'
+import { CitationButton } from '../../components/CitationButton'
+import { Loading } from '../../components/Loading'
+import type { Citation } from '../../types'
+
+const filters = [
+  ['all', 'All findings'], ['strong_point', 'Strong points'], ['weak_point', 'Weak points'],
+  ['potential_mistake', 'Potential mistakes'], ['contradiction', 'Contradictions'], ['missing_link', 'Missing links'],
+]
+
+const icons = { strong_point: CheckCircle2, weak_point: Scale, potential_mistake: SearchCheck, contradiction: AlertTriangle, missing_link: Link2Off }
+
+export function AnalysisView({ caseId, onCitation, onGraph }: { caseId: string; onCitation: (value: Citation) => void; onGraph: () => void }) {
+  const [filter, setFilter] = useState('all')
+  const query = useQuery({ queryKey: ['findings', caseId], queryFn: () => api.findings(caseId) })
+  const findings = useMemo(() => (query.data || []).filter(item => filter === 'all' || item.type === filter), [query.data, filter])
+  if (query.isLoading) return <Loading />
+  return <div className="mx-auto max-w-[1220px]"><div className="flex items-end justify-between"><div><div className="eyebrow">Evidence profile</div><h2 className="mt-1.5 text-xl font-semibold">Analysis findings</h2><p className="mt-1 text-xs text-slate-500">Interpretive classifications derived from transparent factors—not guilt probabilities.</p></div><div className="text-xs text-slate-400">{findings.length} finding{findings.length === 1 ? '' : 's'}</div></div>
+    <div className="mt-5 flex flex-wrap gap-2">{filters.map(([value, label]) => <button key={value} onClick={() => setFilter(value)} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${filter === value ? 'border-slate-700 bg-slate-800 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>{label}</button>)}</div>
+    <div className="mt-5 space-y-4">{findings.map(finding => { const Icon = icons[finding.type as keyof typeof icons] || SearchCheck; const sources = [...finding.supporting_sources, ...finding.contradicting_sources]; return <article key={finding.id} className="panel overflow-hidden"><div className="grid md:grid-cols-[72px_1fr]"><div className={`grid place-items-start border-b border-slate-100 p-5 md:border-b-0 md:border-r ${finding.type === 'contradiction' ? 'bg-red-50 text-red-700' : finding.type === 'strong_point' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}><Icon size={22} /></div><div className="p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="eyebrow">{finding.type.replaceAll('_', ' ')}</div><h3 className="mt-1.5 text-base font-semibold">{finding.title}</h3></div><Badge value={finding.classification} /></div><p className="mt-3 max-w-4xl text-sm leading-6 text-slate-600">{finding.summary}</p><div className="mt-4 grid gap-3 border-y border-slate-100 py-3 sm:grid-cols-4"><Factor label="Support sources" value={finding.supporting_sources.length} /><Factor label="Conflicting sources" value={finding.contradicting_sources.length} /><Factor label="Confidence" value={`${Math.round(finding.confidence * 100)}%`} /><Factor label="Verification" value={finding.verified ? 'Source verified' : 'Review required'} /></div><div className="mt-4 flex flex-wrap items-center gap-2">{sources.map((citation, index) => <CitationButton key={`${citation.chunk_id}-${index}`} citation={citation} onOpen={onCitation} />)}<button onClick={onGraph} className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-50">Open in graph <ArrowUpRight size={13} /></button></div></div></div></article> })}</div>
+  </div>
+}
+
+function Factor({ label, value }: { label: string; value: string | number }) { return <div><div className="text-[10px] uppercase tracking-wide text-slate-400">{label}</div><div className="mt-1 text-xs font-semibold text-slate-700">{value}</div></div> }
+

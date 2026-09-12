@@ -1,0 +1,5 @@
+SYNTHETIC TEST DATA — NOT A REAL CASE.
+Witness W1 stated a fictional vehicle GJ-99-ZZ-1001 was seen at 20:30 on 14/02/2026.
+Witness W2 stated a similar fictional vehicle was seen at 21:15.
+CCTV-DEMO recorded GJ-99-ZZ-1001 at 20:47. A memo contains the intentional typo GJ-99-ZZ-1010.
+

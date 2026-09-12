@@ -1,0 +1,3 @@
+VERSION: 1
+Compare source claims literally for conflicts. Preserve uncertainty and citations. Return strict JSON. Do not resolve a conflict without source support.
+

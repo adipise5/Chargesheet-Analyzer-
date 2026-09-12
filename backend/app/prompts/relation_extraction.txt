@@ -1,0 +1,3 @@
+VERSION: 1
+Extract claim-centric relationships only when explicitly supported. Return strict JSON and source provenance. Do not reduce nuanced assertions to direct Witness-to-Accused links.
+

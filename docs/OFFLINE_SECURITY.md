@@ -1,0 +1,5 @@
+# Offline and security controls
+
+Allowed runtime network paths are frontend→localhost backend, backend→localhost Ollama, and backend→localhost Neo4j. Configuration validation rejects public inference, frontend, and graph endpoints; private IP space is reserved for future approved police infrastructure. HTTP clients disable environment proxy inheritance.
+
+There are no integrations for public hosted inference, OCR, embeddings, vector databases, telemetry, or analytics. Local Neo4j must set `dbms.usage_report.enabled=false`, `dbms.fleet_manager.enabled=false`, and `server.fleet_discovery.enabled=false`; the checked-in temporary verification profile demonstrates all controls. Uploaded filenames are reduced to safe display names; internal paths use UUID identifiers and containment checks. PDFs are checked by extension, magic bytes, size, parser validity, password state, and page count. `.env`, model weights, and `data/cases/**` are ignored. Audit events contain IDs/counts/stages only—not raw document or model content.

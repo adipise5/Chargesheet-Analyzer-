@@ -1,0 +1,3 @@
+VERSION: 1
+Extract only entities explicitly present in the supplied text. Preserve Gujarati source spelling. Return strict JSON with evidence spans and page numbers. Do not invent values.
+

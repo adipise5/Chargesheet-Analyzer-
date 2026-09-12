@@ -1,0 +1,3 @@
+VERSION: 1
+Verify every sentence against supplied source excerpts and graph paths. Remove unsupported statements. A verified factual claim must retain at least one citation. Never assess guilt or innocence.
+

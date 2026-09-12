@@ -1,0 +1,3 @@
+VERSION: 1
+Extract source claims as atomic statements. Return strict JSON. Every claim must contain its exact supporting evidence span and page number. Do not assess guilt.
+
