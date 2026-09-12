@@ -132,7 +132,7 @@ def entity_network() -> list[dict]:
         "SELECT o.label, o.kind, COUNT(DISTINCT o.case_id) case_count "
         "FROM objects o JOIN cases c ON o.case_id=c.id "
         "WHERE c.is_demo=0 AND o.kind IN ('Accused','Witness','Vehicle','Device') "
-        "GROUP BY o.label, o.kind HAVING case_count > 0 ORDER BY case_count DESC LIMIT 30", ()
+        "GROUP BY o.label, o.kind HAVING case_count > 1 ORDER BY case_count DESC LIMIT 30", ()
     )
     return [{"label": row["label"], "kind": row["kind"], "case_count": row["case_count"]} for row in rows]
 

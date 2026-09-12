@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   BarChart3, TrendingUp, MapPin, Shield, Scale, FileText, Users, Search,
-  AlertTriangle, Activity, Eye, Fingerprint, Car, Gavel
+  AlertTriangle, Activity, Eye, Fingerprint, Car, Gavel, Info
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, RadarChart, Radar,
@@ -31,6 +31,26 @@ const STAT_ICONS: Record<string, React.ReactNode> = {
   total_witnesses: <Users size={18} />, total_evidence: <Fingerprint size={18} />,
   total_claims: <Scale size={18} />, total_vehicles: <Car size={18} />,
   total_legal_sections: <Gavel size={18} />, total_findings: <AlertTriangle size={18} />,
+}
+
+const STAT_LABELS: Record<string, string> = {
+  total_cases: 'Cases', total_documents: 'Documents', total_pages: 'Extracted pages',
+  total_accused: 'Extracted accused', total_witnesses: 'Extracted witnesses', total_evidence: 'Evidence records',
+  total_claims: 'Extracted claims', total_vehicles: 'Extracted vehicles', total_legal_sections: 'Extracted legal sections',
+  total_findings: 'Generated findings',
+}
+
+const STAT_HELP: Record<string, string> = {
+  total_cases: 'Number of non-demo cases currently in the local database.',
+  total_documents: 'Uploaded documents linked to non-demo cases.',
+  total_pages: 'Pages successfully extracted from those uploaded documents.',
+  total_accused: 'People classified by the extractor as accused. Zero may mean extraction missed the person, not that no accused is present.',
+  total_witnesses: 'People classified by the extractor as witnesses. This is separate from evidence records labelled as witness material.',
+  total_evidence: 'Extracted evidence records across all supported evidence types. These are not necessarily independently verified.',
+  total_claims: 'Candidate claims extracted from the documents. They are analysis inputs, not established facts.',
+  total_vehicles: 'Vehicle entities explicitly extracted from the documents.',
+  total_legal_sections: 'Legal-section entities explicitly extracted. A zero count should prompt source review.',
+  total_findings: 'Machine-generated review findings, including possible duplicates or graph-linking gaps.',
 }
 
 export function AnalyticsDashboard() {
@@ -91,11 +111,11 @@ export function AnalyticsDashboard() {
             {/* Summary Stats */}
             <section className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {Object.entries(summaryData).map(([key, value]) => (
-                <div key={key} className="animate-fade-in group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
+                <div key={key} title={STAT_HELP[key]} className="animate-fade-in group relative overflow-visible rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-2xl font-bold tracking-tight text-slate-800">{(value as number).toLocaleString()}</div>
-                      <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{key.replace(/total_/g, '').replace(/_/g, ' ')}</div>
+                      <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{STAT_LABELS[key] || key.replace(/total_/g, '').replace(/_/g, ' ')}<span className="relative normal-case tracking-normal"><Info size={11} className="text-slate-300" /><span className="pointer-events-none absolute bottom-5 left-1/2 z-30 hidden w-56 -translate-x-1/2 rounded-lg bg-slate-900 px-3 py-2 text-left text-[11px] font-normal leading-4 text-white normal-case shadow-xl group-hover:block">{STAT_HELP[key]}</span></span></div>
                     </div>
                     <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-teal-50 to-emerald-50 text-teal-600 transition-colors group-hover:from-teal-100 group-hover:to-emerald-100">
                       {STAT_ICONS[key] || <Activity size={18} />}
@@ -104,6 +124,10 @@ export function AnalyticsDashboard() {
                 </div>
               ))}
             </section>
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-amber-900">
+              <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+              <span><strong>Interpretation note:</strong> These are extraction and database counts, not verified crime statistics. With only {summaryData.total_cases} case{summaryData.total_cases === 1 ? '' : 's'}, seasonality and station comparisons are descriptive only. Zero accused, witness, or legal-section counts should be checked against the source documents.</span>
+            </div>
 
             {/* Row: Seasonality + Hotspots */}
             <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
@@ -113,7 +137,7 @@ export function AnalyticsDashboard() {
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-sky-50 text-sky-600"><TrendingUp size={16} /></div>
                   <div>
                     <h2 className="text-sm font-bold text-slate-800">Crime seasonality</h2>
-                    <p className="text-[10px] text-slate-400">Cases and events by month</p>
+                    <p className="text-[10px] text-slate-400">Case registrations and extracted events by month</p>
                   </div>
                 </div>
                 {(temporal.data?.length || 0) > 0 ? (
@@ -136,7 +160,7 @@ export function AnalyticsDashboard() {
                         <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
                         <Area type="monotone" dataKey="cases_registered" stroke="#0d9488" fill="url(#casesGrad)" strokeWidth={2} name="Cases registered" />
-                        <Area type="monotone" dataKey="crime_events" stroke="#0ea5e9" fill="url(#eventsGrad)" strokeWidth={2} name="Crime events" />
+                        <Area type="monotone" dataKey="crime_events" stroke="#0ea5e9" fill="url(#eventsGrad)" strokeWidth={2} name="Extracted events" />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -149,7 +173,7 @@ export function AnalyticsDashboard() {
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-rose-50 text-rose-500"><MapPin size={16} /></div>
                   <div>
                     <h2 className="text-sm font-bold text-slate-800">Crime hotspots</h2>
-                    <p className="text-[10px] text-slate-400">Cases by police station</p>
+                    <p className="text-[10px] text-slate-400">Cases grouped by police station—not geographic hotspots</p>
                   </div>
                 </div>
                 {(hotspots.data?.length || 0) > 0 ? (
@@ -179,7 +203,7 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-violet-50 text-violet-600"><Gavel size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Legal sections</h2>
+                    <h2 className="text-sm font-bold text-slate-800">Extracted legal sections</h2>
                     <p className="text-[10px] text-slate-400">IPC / BNS frequency</p>
                   </div>
                 </div>
@@ -215,7 +239,7 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-50 text-amber-600"><Fingerprint size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Evidence profile</h2>
+                    <h2 className="text-sm font-bold text-slate-800">Extracted evidence profile</h2>
                     <p className="text-[10px] text-slate-400">Type distribution</p>
                   </div>
                 </div>
@@ -275,7 +299,7 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-red-50 text-red-500"><AlertTriangle size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Findings breakdown</h2>
+                    <h2 className="text-sm font-bold text-slate-800">Generated findings breakdown</h2>
                     <p className="text-[10px] text-slate-400">Types of issues detected</p>
                   </div>
                 </div>
@@ -303,8 +327,8 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600"><Users size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Key entities</h2>
-                    <p className="text-[10px] text-slate-400">Accused, witnesses, vehicles across cases</p>
+                    <h2 className="text-sm font-bold text-slate-800">Repeated entities</h2>
+                    <p className="text-[10px] text-slate-400">Entities appearing in more than one case</p>
                   </div>
                 </div>
                 {(entityNetwork.data?.length || 0) > 0 ? (
