@@ -111,11 +111,11 @@ export function AnalyticsDashboard() {
             {/* Summary Stats */}
             <section className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {Object.entries(summaryData).map(([key, value]) => (
-                <div key={key} title={STAT_HELP[key]} className="animate-fade-in group relative overflow-visible rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
+                <div key={key} title={STAT_HELP[key]} className="animate-fade-in group relative z-0 overflow-visible rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:z-50 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-2xl font-bold tracking-tight text-slate-800">{(value as number).toLocaleString()}</div>
-                      <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{STAT_LABELS[key] || key.replace(/total_/g, '').replace(/_/g, ' ')}<span className="relative normal-case tracking-normal"><Info size={11} className="text-slate-300" /><span className="pointer-events-none absolute bottom-5 left-1/2 z-30 hidden w-56 -translate-x-1/2 rounded-lg bg-slate-900 px-3 py-2 text-left text-[11px] font-normal leading-4 text-white normal-case shadow-xl group-hover:block">{STAT_HELP[key]}</span></span></div>
+                      <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{STAT_LABELS[key] || key.replace(/total_/g, '').replace(/_/g, ' ')}<span className="relative normal-case tracking-normal"><Info size={11} className="text-slate-300" /><span className="pointer-events-none absolute left-0 top-full z-[100] mt-2 hidden w-56 rounded-lg bg-slate-900 px-3 py-2 text-left text-[11px] font-normal leading-4 text-white normal-case shadow-xl group-hover:block">{STAT_HELP[key]}</span></span></div>
                     </div>
                     <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-teal-50 to-emerald-50 text-teal-600 transition-colors group-hover:from-teal-100 group-hover:to-emerald-100">
                       {STAT_ICONS[key] || <Activity size={18} />}
