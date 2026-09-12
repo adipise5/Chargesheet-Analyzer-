@@ -10,7 +10,10 @@ type Answer = { answer: string; citations: Citation[]; confidence: number; revie
 type ChatMessage = { id: number; question: string; response?: Answer; error?: string; pending?: boolean }
 
 function AnswerText({ text }: { text: string }) {
-  return <div className="space-y-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{text.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+  // Some local-model responses contain a UTF-8 bullet decoded as Windows-1252.
+  // Repair that presentation artifact without changing stored source material.
+  const cleanText = text.replaceAll('â€¢', '•')
+  return <div className="space-y-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{cleanText.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
 }
 
 export function AskCaseView({ caseId, onCitation }: { caseId: string; onCitation: (value: Citation) => void }) {
