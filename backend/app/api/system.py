@@ -5,11 +5,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
-from app.core.model_config import ModelConfig
 from app.core.runtime_mode import is_read_only_demo, require_writable
-from app.ocr.tesseract_provider import TesseractOCRProvider
-from app.services.ollama_service import OllamaService
-from app.services.purge_service import purge_all_data
 from app.storage.sqlite import db, now_iso
 
 router = APIRouter(prefix="/api/system", tags=["system"])
@@ -163,6 +159,7 @@ INPUT:\n{json.dumps(missing_texts, ensure_ascii=False)}"""
 def purge_data():
     """Permanently erase all local case and judgment runtime data."""
     require_writable()
+    from app.services.purge_service import purge_all_data
     return {"status": "purged", "removed": purge_all_data()}
 
 
@@ -175,6 +172,9 @@ def health():
                 "ollama": {"available": False, "models": [], "missing": [], "disabled": True},
                 "tesseract": {"available": False, "message": "Disabled in hosted snapshot mode"},
                 "neo4j": {"available": False, "mode": "sqlite-system-of-record"}}
+    from app.core.model_config import ModelConfig
+    from app.ocr.tesseract_provider import TesseractOCRProvider
+    from app.services.ollama_service import OllamaService
     config = ModelConfig.from_env()
     tess_ok, tess_message = TesseractOCRProvider().available()
     ollama = OllamaService(config).health()

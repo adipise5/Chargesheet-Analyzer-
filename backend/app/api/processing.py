@@ -2,7 +2,6 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from app.services.case_service import get_case, status_payload
 from app.core.runtime_mode import require_writable
-from app.services.processing_service import process_case
 
 router = APIRouter(prefix="/api/cases/{case_id}", tags=["processing"])
 
@@ -10,6 +9,7 @@ router = APIRouter(prefix="/api/cases/{case_id}", tags=["processing"])
 @router.post("/process", status_code=202)
 def start_processing(case_id: str, background_tasks: BackgroundTasks):
     require_writable()
+    from app.services.processing_service import process_case
     case = get_case(case_id)
     if not case:
         raise HTTPException(404, "Case not found")

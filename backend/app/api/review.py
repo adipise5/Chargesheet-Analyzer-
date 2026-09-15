@@ -6,13 +6,8 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.extraction.entity_resolution import normalize_text
 from app.core.runtime_mode import require_writable
-from app.graph.builder import build_graph
-from app.graph.repository import graph_repository
-from app.services.analysis_service import generate_findings
 from app.services.case_service import get_case
-from app.services.processing_service import chunk_text
 from app.storage.sqlite import db, now_iso
 
 router = APIRouter(prefix="/api/cases/{case_id}/ocr", tags=["review"])
@@ -37,6 +32,7 @@ def review_queue(case_id: str):
 @router.patch("/review/{page_id}")
 def update_review(case_id: str, page_id: str, payload: ReviewUpdate):
     require_writable()
+    from app.extraction.entity_resolution import normalize_text
     row = db.one("SELECT * FROM pages WHERE id=? AND case_id=?", (page_id, case_id))
     if not row:
         raise HTTPException(404, "Page not found")
@@ -53,6 +49,11 @@ def update_review(case_id: str, page_id: str, payload: ReviewUpdate):
 
 
 def _rebuild_from_review(case_id: str, document_id: str, page_number: int, text: str) -> None:
+    from app.extraction.entity_resolution import normalize_text
+    from app.graph.builder import build_graph
+    from app.graph.repository import graph_repository
+    from app.services.analysis_service import generate_findings
+    from app.services.processing_service import chunk_text
     with db.connect() as con:
         con.execute("DELETE FROM chunks WHERE case_id=? AND document_id=? AND page_number=?", (case_id, document_id, page_number))
         for index, body in enumerate(chunk_text(text), start=1):

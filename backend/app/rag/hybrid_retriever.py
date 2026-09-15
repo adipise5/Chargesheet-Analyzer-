@@ -22,7 +22,10 @@ class HybridRetriever:
     def __init__(self):
         self.lexical = LexicalRetriever()
         self.graph = GraphRetriever()
-        self.semantic = None if is_read_only_demo() else SemanticRetriever()
+        if is_read_only_demo():
+            self.semantic = None
+        else:
+            self.semantic = SemanticRetriever()
 
     def retrieve(self, question: str, graph: dict, chunks: list[dict], limit: int = 12) -> list[dict]:
         lists = [self.graph.retrieve(question, graph, chunks), self.lexical.retrieve(question, chunks)]

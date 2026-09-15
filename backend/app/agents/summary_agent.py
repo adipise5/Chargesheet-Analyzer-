@@ -5,7 +5,6 @@ import json
 
 from pydantic import BaseModel, Field
 
-from app.services.ollama_service import OllamaService
 
 
 class BilingualSummary(BaseModel):
@@ -61,6 +60,7 @@ English must be natural professional English. Gujarati must be natural Gujarati 
 CASE METRICS: {counts}
 CASE RECORD EXCERPTS:\n{source_text[:12000]}"""
     try:
+        from app.services.ollama_service import OllamaService
         result = OllamaService().structured(prompt, BilingualSummary, temperature=0.1)
         return result.model_dump()
     except Exception:
