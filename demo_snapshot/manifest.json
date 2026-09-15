@@ -1,25 +1,26 @@
 {
   "format": 1,
-  "created_at": "2026-09-15T16:17:09.863313+00:00",
+  "created_at": "2026-09-15T17:47:43.290994+00:00",
   "source_is_runtime_only": true,
   "counts": {
-    "cases": 1,
-    "documents": 1,
-    "pages": 3,
-    "chunks": 9,
-    "objects": 33,
-    "relations": 32,
-    "findings": 6,
-    "jobs": 1,
+    "cases": 6,
+    "documents": 6,
+    "pages": 79,
+    "chunks": 232,
+    "objects": 800,
+    "relations": 857,
+    "findings": 67,
+    "jobs": 6,
     "audits": 0,
     "judgments": 5,
     "judgment_chunks": 76,
-    "translation_cache": 147,
-    "query_cache": 4
+    "translation_cache": 1054,
+    "query_cache": 24
   },
   "contents": [
     "chargesheet.db",
     "cases/",
-    "legal_kb/"
+    "legal_kb/",
+    "public_source_report.json"
   ]
 }

@@ -1,5 +1,5 @@
 export type Citation = { document_id: string; page: number; chunk_id: string; label: string }
-export type Case = { id: string; case_number: string; police_station: string; language: string; status: string; is_demo: boolean; created_at: string; updated_at: string }
+export type Case = { id: string; case_number: string; police_station: string; language: string; status: string; is_demo: boolean; record_type: 'investigation' | 'educational_sample' | 'public_judgment'; created_at: string; updated_at: string }
 export type Finding = {
   id: string; type: string; title: string; summary: string; classification: string; confidence: number
   supporting_sources: Citation[]; contradicting_sources: Citation[]; entities: string[]; factors: Record<string, number | boolean>
@@ -10,7 +10,7 @@ export type Finding = {
 export type GraphNode = { id: string; type: string; label: string; aliases: string[]; confidence: number; metadata: Record<string, unknown> }
 export type GraphEdge = { id: string; source: string; target: string; relation: string; confidence: number; citations: Citation[]; extraction_method: string; human_verified: boolean }
 export type GraphData = { nodes: GraphNode[]; edges: GraphEdge[] }
-export type DocumentRecord = { id: string; case_id: string; filename: string; category: string; role: string; page_count: number; status: string }
+export type DocumentRecord = { id: string; case_id: string; filename: string; category: string; role: string; page_count: number; status: string; source_url?: string | null }
 export type PageRecord = {
   id: string; document_id: string; page_number: number; extraction_method: string; language: string
   original_text: string; normalized_text: string; corrected_text?: string; tesseract_text?: string; vision_candidate_text?: string

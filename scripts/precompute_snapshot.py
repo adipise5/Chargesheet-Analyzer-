@@ -21,6 +21,7 @@ sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from app.core.config import settings  # noqa: E402
 from app.api.system import TranslationRequest, translate  # noqa: E402
+from app.agents.summary_agent import _fallback as fallback_summary  # noqa: E402
 from app.graph.repository import graph_repository  # noqa: E402
 from app.services.analysis_service import get_findings  # noqa: E402
 from app.services.judgment_service import analyze_precedents  # noqa: E402
@@ -122,12 +123,22 @@ def _save_summary_translation(case_id: str, translated: dict[str, str]) -> None:
         digest = hashlib.sha256(english.encode("utf-8")).hexdigest()
         cached = db.one("SELECT translated_text FROM translation_cache WHERE text_hash=? AND target='gujarati'", (digest,))
         gujarati = cached.get("translated_text") if cached else None
-    if gujarati and _has_gujarati(gujarati):
-        summary["gujarati"] = gujarati
-    elif "gujarati" in summary:
-        # Do not carry a stale or malformed model translation into the hosted
-        # image. The UI has an explicit English fallback for this case.
-        summary.pop("gujarati", None)
+    if not (gujarati and _has_gujarati(gujarati)):
+        # A compact local model can occasionally return malformed output for a
+        # single long item. Keep the hosted Overview fully bilingual without
+        # doing inference at runtime by using the same conservative, factual
+        # fallback used by the live summary agent.
+        case = db.one("SELECT * FROM cases WHERE id=?", (case_id,)) or {"case_number": case_id}
+        object_counts = {row["kind"]: row["count"] for row in db.all(
+            "SELECT kind,COUNT(*) count FROM objects WHERE case_id=? GROUP BY kind", (case_id,))}
+        counts = {
+            "documents": db.one("SELECT COUNT(*) count FROM documents WHERE case_id=?", (case_id,))["count"],
+            "pages": db.one("SELECT COUNT(*) count FROM pages WHERE case_id=?", (case_id,))["count"],
+            "claims": object_counts.get("Claim", 0),
+            "evidence": sum(object_counts.get(kind, 0) for kind in ("Evidence", "DigitalEvidence", "PhysicalEvidence", "ForensicEvidence")),
+        }
+        gujarati = fallback_summary(case, counts)["gujarati"]
+    summary["gujarati"] = gujarati
     db.execute("UPDATE cases SET summary_json=? WHERE id=?", (json.dumps(summary, ensure_ascii=False), case_id))
 
 

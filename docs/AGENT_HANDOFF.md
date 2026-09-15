@@ -1,6 +1,6 @@
 # Chargesheet Analyzer — Engineering Handoff
 
-This document is the practical handoff for another developer or coding agent working on the project. It describes the system as implemented in this checkout, how to run it locally, where the important behavior lives, and what remains incomplete.
+This document is the practical handoff for another developer or coding agent working on the project. It describes the system as implemented in this checkout, how to run it locally, where the important behavior lives, and the boundaries that still require human review.
 
 ## 1. Product purpose
 
@@ -47,6 +47,7 @@ data/
 docs/                 Architecture, security, pipeline, UI, and handoff docs
 scripts/              Windows setup/check/start/test helpers
 models/               Model-related local assets/configuration
+demo_snapshot/        Audited public-only Render snapshot (deployment branch)
 ```
 
 ## 3. Runtime architecture
@@ -62,6 +63,12 @@ Local model services are provided by Ollama:
 - OCR: Tesseract with Gujarati and English language data when installed.
 
 The application rejects non-local backend/frontend/model endpoints through configuration validation. Case documents are stored under `data/cases/<case-id>/documents/` and are intentionally ignored by Git.
+
+The `prishiv_render_demo` deployment branch also has a read-only Render mode.
+It seeds `demo_snapshot/` into an ephemeral container at startup and does not
+install or call Ollama, BGE-M3, Tesseract, Neo4j, or any external database.
+The snapshot currently contains one educational sample case plus five separate
+public-judgment reference cases, with five judgments in the precedent corpus.
 
 ## 4. Windows setup and execution
 
@@ -93,6 +100,21 @@ npm run dev
 ```
 
 The API health endpoint is `http://127.0.0.1:8000/api/system/health`. Swagger is at `http://127.0.0.1:8000/docs`.
+
+To rebuild the public deployment dataset without touching the active local
+database, run from the repository root:
+
+```powershell
+$env:PYTHONPATH='backend'
+.\.venv\Scripts\python.exe scripts\import_public_demo.py --replace
+```
+
+The importer stages beside the repository, validates the catalog and original
+public PDFs, processes the five judgment cases once, warms summaries/findings,
+defense/graph/timeline/precedent data, prepared Ask Case responses, and cached
+translations, then exports `demo_snapshot/`. It never downloads a source when
+the application starts. `--reuse-stage --replace` can repair or re-export an
+existing sibling stage without processing the PDFs again.
 
 ## 5. Configuration and dependencies
 
@@ -127,8 +149,8 @@ Processing stages are: PDF validation, page identification, native extraction, s
 
 The SQLite schema is created by `backend/app/storage/sqlite.py`. The principal tables are:
 
-- `cases`: case identity, station, language, status, and timestamps.
-- `documents`: uploaded file metadata, role, hash, and processing status.
+- `cases`: case identity, station, language, status, `record_type`, and timestamps.
+- `documents`: uploaded file metadata, role, hash, processing status, and nullable public `source_url`.
 - `pages`: original/normalized text, extraction method, OCR confidence, review status, corrections, and blocks.
 - `chunks`: page-level retrieval units and optional embeddings.
 - `objects` and `relations`: graph nodes/edges with confidence and source metadata.
@@ -136,6 +158,7 @@ The SQLite schema is created by `backend/app/storage/sqlite.py`. The principal t
 - `jobs`: one processing status record per case.
 - `audits`: local audit trail for processing and OCR corrections.
 - `judgments` and `judgment_chunks`: the local precedent corpus.
+- `translation_cache`, `query_cache`: reusable language and prepared Ask Case outputs.
 
 Do not commit `data/chargesheet.db`, case PDFs, page images, extracted private text, model outputs containing case details, or test fixtures derived from real case records.
 
@@ -146,6 +169,13 @@ The current analysis is conservative and provenance-first. It can identify missi
 Defense output is generated from detected findings and presents possible questions plus IO verification prompts. It is not legal advice.
 
 Precedent analysis searches only judgments explicitly imported into the local corpus. With zero imported judgments, the correct UI behavior is an empty-corpus explanation rather than a fabricated result.
+
+Cross-case analytics keeps the educational/sample case in the case register and
+excludes `record_type='public_judgment'` from incident-oriented charts by
+default. The UI exposes the selected source scope and an explicit opt-in to
+include reference records; neither view should be described as crime statistics.
+Public judgment cases are deliberately incomplete source sets and are labelled
+as such in the case register, workspace header, and Documents attribution panel.
 
 Extraction is intentionally heuristic. Person, vehicle, device, legal-section, event, claim, and evidence extraction should be treated as candidates requiring review. Scanned Gujarati and handwritten documents depend on Tesseract quality and may require human correction.
 
@@ -171,20 +201,24 @@ For a manual smoke test, create a disposable case, upload a non-sensitive PDF, w
 
 ## 10. Privacy and cleanup
 
-The supplied sensitive test document has been removed from the local app runtime and from the repository checkout. The original source in the user Downloads folder was not touched. Runtime PDFs and the local SQLite database were deleted; the database will be recreated empty when the backend starts. `data/cases/.gitkeep` is the only remaining file in the case-storage directory.
+The public deployment bundle is audited separately from the active local
+runtime. Only the public artifacts listed in `scripts/public_demo_sources.json`
+may be force-added under `demo_snapshot/`; private uploads, OCR images,
+extracted text, local databases, and model outputs remain under ignored `data/`
+paths. The four currently unavailable eCourts URLs are recorded in the public
+source report but no error pages are imported. Before every deployment commit,
+scan the Git tree and snapshot SQLite contents for private names, workstation
+paths, and audit rows.
 
 If a future sensitive test is needed, keep the source outside the repository, use a clearly disposable case ID, and remove both the case database rows and its `data/cases/<case-id>` directory afterward. Verify with `git status`, `git ls-files`, and `git check-ignore` before committing.
 
 ## 11. Recommended next engineering work
 
-1. Add integration tests for upload → process → every workspace endpoint.
-2. Add fixture-based tests using synthetic, non-sensitive PDFs for FIR/statement/medical/forensic comparisons.
-3. Improve entity extraction with document-role-aware parsing and stronger deduplication tests.
-4. Add explicit model timeout/cancellation handling and a visible retry path.
-5. Add judgment import fixtures and test precedent retrieval end-to-end.
-6. Add export/report generation if court-ready review packets are required.
-7. Add database cleanup tooling that removes a case, its jobs/audits, files, and derived records atomically.
-8. Add regression tests for frontend case switching, citation navigation, OCR correction rebuilds, and stale/deleted-case errors.
+1. Add fixture-based tests using synthetic, non-sensitive FIR/statement/medical/forensic comparisons.
+2. Improve entity extraction with document-role-aware parsing and stronger deduplication tests.
+3. Add explicit model timeout/cancellation handling and a visible retry path for local processing.
+4. Add export/report generation if court-ready review packets are required.
+5. Add regression tests for frontend case switching, citation navigation, OCR correction rebuilds, and stale/deleted-case errors.
 
 ## 12. Working conventions for agents
 

@@ -16,6 +16,7 @@ PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS cases (
   id TEXT PRIMARY KEY, case_number TEXT NOT NULL, police_station TEXT NOT NULL,
   language TEXT NOT NULL, status TEXT NOT NULL, is_demo INTEGER NOT NULL DEFAULT 0,
+  record_type TEXT NOT NULL DEFAULT 'investigation',
   created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
   summary_json TEXT, summary_fingerprint TEXT,
   precedents_json TEXT, precedents_fingerprint TEXT
@@ -24,7 +25,8 @@ CREATE TABLE IF NOT EXISTS documents (
   id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
   filename TEXT NOT NULL, stored_name TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'unknown',
   page_count INTEGER NOT NULL DEFAULT 0, sha256 TEXT NOT NULL, status TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'supporting_record', created_at TEXT NOT NULL, UNIQUE(case_id, sha256)
+  role TEXT NOT NULL DEFAULT 'supporting_record', source_url TEXT, created_at TEXT NOT NULL,
+  UNIQUE(case_id, sha256)
 );
 CREATE TABLE IF NOT EXISTS pages (
   id TEXT PRIMARY KEY, case_id TEXT NOT NULL, document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
@@ -107,7 +109,11 @@ class Database:
             columns = {row[1] for row in connection.execute("PRAGMA table_info(documents)").fetchall()}
             if "role" not in columns:
                 connection.execute("ALTER TABLE documents ADD COLUMN role TEXT NOT NULL DEFAULT 'supporting_record'")
+            if "source_url" not in columns:
+                connection.execute("ALTER TABLE documents ADD COLUMN source_url TEXT")
             case_columns = {row[1] for row in connection.execute("PRAGMA table_info(cases)").fetchall()}
+            if "record_type" not in case_columns:
+                connection.execute("ALTER TABLE cases ADD COLUMN record_type TEXT NOT NULL DEFAULT 'investigation'")
             if "summary_json" not in case_columns:
                 connection.execute("ALTER TABLE cases ADD COLUMN summary_json TEXT")
             if "summary_fingerprint" not in case_columns:

@@ -20,19 +20,19 @@ case-record store.
 
 ## Prepare a public-only snapshot locally
 
-Use the normal local app to process only public or synthetic material. After the
-case records and approved public judgments are ready:
+Use the normal local app to process only public or synthetic material. The
+repeatable public-demo importer stages outside the active `data/` directory,
+adds the five verified public judgment examples as separate incomplete source
+cases, warms their reusable outputs, and exports the audited six-case bundle:
 
 ```bash
-python scripts/precompute_snapshot.py
-python scripts/build_snapshot.py --output ../chargesheet-render-snapshot
+python scripts/import_public_demo.py --replace
 ```
 
 The same scripts run on Windows PowerShell:
 
 ```powershell
-.venv\Scripts\python.exe scripts\precompute_snapshot.py
-.venv\Scripts\python.exe scripts\build_snapshot.py --output ..\chargesheet-render-snapshot
+.venv\Scripts\python.exe scripts\import_public_demo.py --replace
 ```
 
 The exporter copies the database, case document files, and legal corpus into a
@@ -41,11 +41,11 @@ counts before using it. Never put private FIRs, chargesheets, OCR images, or
 local runtime databases in `demo_snapshot/` or commit them. The repository ignores that
 directory by default as a safety measure.
 
-This deployment branch contains one deliberately audited public-only bundle in
-`demo_snapshot/`. The ignore rule remains a guard against accidental additions;
-if the snapshot is regenerated, review the manifest, filenames, and Git diff
-before force-adding the replacement. Keep private local runtime data in
-`data/`, where it remains ignored.
+This deployment branch contains a deliberately audited public-only six-case
+bundle in `demo_snapshot/`. The ignore rule remains a guard against accidental
+additions; if the snapshot is regenerated, review the manifest, source report,
+filenames, and Git diff before force-adding the replacement. Keep private local
+runtime data in `data/`, where it remains ignored.
 
 ## Deploy
 

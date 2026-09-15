@@ -13,18 +13,36 @@ from app.extraction.date_utils import normalize_date
 from app.storage.sqlite import db
 
 
-def global_summary() -> dict:
+def _case_scope(include_reference_records: bool, alias: str = "c") -> str:
+    """Return the safe SQL scope used by cross-case analytics."""
+    scope = f"COALESCE({alias}.record_type, 'investigation') <> 'public_judgment'"
+    if not include_reference_records:
+        return scope
+    # Keeping this branch explicit documents that the optional view is the
+    # only mode that mixes legal-reference records into incident-style charts.
+    scope = "1=1"
+    return scope
+
+
+def _reference_case_count() -> int:
+    return db.one(
+        "SELECT COUNT(*) count FROM cases WHERE is_demo=0 AND COALESCE(record_type,'investigation')='public_judgment'"
+    )["count"]
+
+
+def global_summary(include_reference_records: bool = False) -> dict:
     """Top-level statistics across all cases."""
-    cases_count = db.one("SELECT COUNT(*) count FROM cases WHERE is_demo=0", ())["count"]
-    docs_count = db.one("SELECT COUNT(*) count FROM documents d JOIN cases c ON d.case_id=c.id WHERE c.is_demo=0", ())["count"]
-    pages_count = db.one("SELECT COUNT(*) count FROM pages p JOIN cases c ON p.case_id=c.id WHERE c.is_demo=0", ())["count"]
+    scope = _case_scope(include_reference_records)
+    cases_count = db.one(f"SELECT COUNT(*) count FROM cases c WHERE {scope}", ())["count"]
+    docs_count = db.one(f"SELECT COUNT(*) count FROM documents d JOIN cases c ON d.case_id=c.id WHERE {scope}", ())["count"]
+    pages_count = db.one(f"SELECT COUNT(*) count FROM pages p JOIN cases c ON p.case_id=c.id WHERE {scope}", ())["count"]
 
     object_counts = db.all(
-        "SELECT o.kind, COUNT(*) count FROM objects o JOIN cases c ON o.case_id=c.id WHERE c.is_demo=0 GROUP BY o.kind", ()
+        f"SELECT o.kind, COUNT(*) count FROM objects o JOIN cases c ON o.case_id=c.id WHERE {scope} GROUP BY o.kind", ()
     )
     kind_map = {row["kind"]: row["count"] for row in object_counts}
 
-    findings_count = db.one("SELECT COUNT(*) count FROM findings f JOIN cases c ON f.case_id=c.id WHERE c.is_demo=0", ())["count"]
+    findings_count = db.one(f"SELECT COUNT(*) count FROM findings f JOIN cases c ON f.case_id=c.id WHERE {scope}", ())["count"]
 
     return {
         "total_cases": cases_count,
@@ -37,21 +55,23 @@ def global_summary() -> dict:
         "total_vehicles": kind_map.get("Vehicle", 0),
         "total_legal_sections": kind_map.get("LegalSection", 0),
         "total_findings": findings_count,
+        "reference_cases": _reference_case_count(),
     }
 
 
-def crime_type_distribution() -> list[dict]:
+def crime_type_distribution(include_reference_records: bool = False) -> list[dict]:
     """IPC/BNS section frequency across all non-demo cases."""
     rows = db.all(
         "SELECT o.label, COUNT(*) count FROM objects o JOIN cases c ON o.case_id=c.id "
-        "WHERE c.is_demo=0 AND o.kind='LegalSection' GROUP BY o.label ORDER BY count DESC", ()
+        f"WHERE {_case_scope(include_reference_records)} AND o.kind='LegalSection' GROUP BY o.label ORDER BY count DESC", ()
     )
     return [{"section": row["label"], "count": row["count"]} for row in rows]
 
 
-def temporal_distribution() -> list[dict]:
+def temporal_distribution(include_reference_records: bool = False) -> list[dict]:
     """Separate case registration, extraction completion, and source events by month."""
-    rows = db.all("SELECT created_at FROM cases WHERE is_demo=0", ())
+    scope = _case_scope(include_reference_records)
+    rows = db.all(f"SELECT created_at FROM cases c WHERE {scope}", ())
     registered_monthly: Counter = Counter()
     for row in rows:
         match = re.match(r"(\d{4})-(\d{2})", row["created_at"] or "")
@@ -63,7 +83,7 @@ def temporal_distribution() -> list[dict]:
     extracted_rows = db.all(
         "SELECT c.id, COALESCE(j.updated_at, MIN(d.created_at)) AS extracted_at "
         "FROM cases c LEFT JOIN jobs j ON j.case_id=c.id AND j.state='complete' "
-        "LEFT JOIN documents d ON d.case_id=c.id WHERE c.is_demo=0 GROUP BY c.id", ()
+        f"LEFT JOIN documents d ON d.case_id=c.id WHERE {scope} GROUP BY c.id", ()
     )
     extracted_monthly: Counter = Counter()
     for row in extracted_rows:
@@ -74,7 +94,7 @@ def temporal_distribution() -> list[dict]:
     # Also include event dates from objects
     event_rows = db.all(
         "SELECT o.data_json FROM objects o JOIN cases c ON o.case_id=c.id "
-        "WHERE c.is_demo=0 AND o.kind='Event'", ()
+        f"WHERE {scope} AND o.kind='Event'", ()
     )
     event_monthly: Counter = Counter()
     for row in event_rows:
@@ -98,56 +118,56 @@ def temporal_distribution() -> list[dict]:
     } for m in all_months]
 
 
-def crime_hotspots() -> list[dict]:
+def crime_hotspots(include_reference_records: bool = False) -> list[dict]:
     """Crime frequency by police station."""
     rows = db.all(
-        "SELECT police_station, COUNT(*) count FROM cases WHERE is_demo=0 GROUP BY police_station ORDER BY count DESC", ()
+        f"SELECT police_station, COUNT(*) count FROM cases c WHERE {_case_scope(include_reference_records)} GROUP BY police_station ORDER BY count DESC", ()
     )
     return [{"station": row["police_station"], "count": row["count"]} for row in rows]
 
 
-def case_status_distribution() -> list[dict]:
+def case_status_distribution(include_reference_records: bool = False) -> list[dict]:
     """Case resolution pipeline status breakdown."""
     rows = db.all(
-        "SELECT status, COUNT(*) count FROM cases WHERE is_demo=0 GROUP BY status ORDER BY count DESC", ()
+        f"SELECT status, COUNT(*) count FROM cases c WHERE {_case_scope(include_reference_records)} GROUP BY status ORDER BY count DESC", ()
     )
     return [{"status": row["status"], "count": row["count"]} for row in rows]
 
 
-def evidence_profile() -> list[dict]:
+def evidence_profile(include_reference_records: bool = False) -> list[dict]:
     """Evidence type distribution across all cases."""
     rows = db.all(
         "SELECT o.subtype, COUNT(*) count FROM objects o JOIN cases c ON o.case_id=c.id "
-        "WHERE c.is_demo=0 AND o.kind IN ('Evidence','DigitalEvidence','PhysicalEvidence','ForensicEvidence') "
+        f"WHERE {_case_scope(include_reference_records)} AND o.kind IN ('Evidence','DigitalEvidence','PhysicalEvidence','ForensicEvidence') "
         "GROUP BY o.subtype ORDER BY count DESC", ()
     )
     return [{"type": row["subtype"], "count": row["count"]} for row in rows]
 
 
-def entity_network() -> list[dict]:
+def entity_network(include_reference_records: bool = False) -> list[dict]:
     """Top entities that appear across multiple cases (repeat offenders, common vehicles, etc.)."""
     rows = db.all(
         "SELECT o.label, o.kind, COUNT(DISTINCT o.case_id) case_count "
         "FROM objects o JOIN cases c ON o.case_id=c.id "
-        "WHERE c.is_demo=0 AND o.kind IN ('Accused','Witness','Vehicle','Device') "
+        f"WHERE {_case_scope(include_reference_records)} AND o.kind IN ('Accused','Witness','Vehicle','Device') "
         "GROUP BY o.label, o.kind HAVING case_count > 1 ORDER BY case_count DESC LIMIT 30", ()
     )
     return [{"label": row["label"], "kind": row["kind"], "case_count": row["case_count"]} for row in rows]
 
 
-def findings_summary() -> list[dict]:
+def findings_summary(include_reference_records: bool = False) -> list[dict]:
     """Finding type distribution across all cases."""
     rows = db.all(
         "SELECT f.type, COUNT(*) count FROM findings f JOIN cases c ON f.case_id=c.id "
-        "WHERE c.is_demo=0 GROUP BY f.type ORDER BY count DESC", ()
+        f"WHERE {_case_scope(include_reference_records)} GROUP BY f.type ORDER BY count DESC", ()
     )
     return [{"type": row["type"], "count": row["count"]} for row in rows]
 
 
-def document_roles() -> list[dict]:
+def document_roles(include_reference_records: bool = False) -> list[dict]:
     """Distribution of document roles (FIR, chargesheet, etc.)."""
     rows = db.all(
         "SELECT d.role, COUNT(*) count FROM documents d JOIN cases c ON d.case_id=c.id "
-        "WHERE c.is_demo=0 GROUP BY d.role ORDER BY count DESC", ()
+        f"WHERE {_case_scope(include_reference_records)} GROUP BY d.role ORDER BY count DESC", ()
     )
     return [{"role": row["role"], "count": row["count"]} for row in rows]

@@ -1,0 +1,109 @@
+{
+  "catalog_version": 1,
+  "description": "Public-only sources approved for the Render demonstration snapshot.",
+  "sources": [
+    {
+      "id": "educational_mock_chargesheet",
+      "title": "Educational final investigation report / sample chargesheet",
+      "source_type": "educational_sample",
+      "status": "verified_pdf",
+      "url": "https://www.lawctopus.com/wp-content/uploads/2014/09/Chargesheet.pdf",
+      "artifact": "demo_snapshot/cases/case_6cf61a24b15e40dfa2b52b802e78b6de/documents/doc_fac56abdd97d4e6ab33bc1a115ec3220.pdf",
+      "sha256": "5a73b0ea541b6c0655c1ac2b5ee9a258a4ca9cc32201a1f6bd38541f394c47f6",
+      "page_count": 3,
+      "case_id": "case_6cf61a24b15e40dfa2b52b802e78b6de"
+    },
+    {
+      "id": "ecourts_cbi_kapil_wadhawan",
+      "title": "CBI v. Kapil Wadhawan & Others — eCourts order",
+      "source_type": "ecourts_order",
+      "status": "unavailable_404",
+      "url": "https://app.ecourts.gov.in/ecourt_mobile_encrypted_DC/display_pdf.php?filename=esfvSQGWRzGPaFkrq3YTmfhbhPl1mIhJAkaJR068gMgCKpGxBLftiU0wsMlUmY0k&caseno=0jdB0B9yFvdhjgLgcb49410OXzIoh7ZMwR1R0CsaL8w=&cCode=SZ7Oem46NPGlntDbiOv3oA==&appFlag=&state_cd=DytSfGyRsIC664sNz2SgoA==&dist_cd=Wqu661mudHWcCN3nrjIwHw==&court_code=SZ7Oem46NPGlntDbiOv3oA==&bilingual_flag=0",
+      "artifact": null
+    },
+    {
+      "id": "ecourts_cbi_related_document",
+      "title": "CBI v. Kapi / related eCourts document",
+      "source_type": "ecourts_order",
+      "status": "unavailable_404",
+      "url": "https://app.ecourts.gov.in/ecourt_mobile_encrypted_DC/display_pdf.php?filename=esfvSQGWRzGPaFkrq3YTmfhbhPl1mIhJAkaJR068gMhVD0iE4ZgrgFxeG9ir6qBR&caseno=0jdB0B9yFvdhjgLgcb49410OXzIoh7ZMwR1R0CsaL8w=&cCode=SZ7Oem46NPGlntDbiOv3oA==&appFlag=&state_cd=DytSfGyRsIC664sNz2SgoA==&dist_cd=Wqu661mudHWcCN3nrjIwHw==&court_code=SZ7Oem46NPGlntDbiOv3oA==&bilingual_flag=0",
+      "artifact": null
+    },
+    {
+      "id": "ecourts_delhi_chargesheet_reference",
+      "title": "Delhi District Court eCourts document referring to a chargesheet",
+      "source_type": "ecourts_order",
+      "status": "unavailable_404",
+      "url": "https://app.ecourts.gov.in/ecourt_mobile_encrypted_DC/display_pdf.php?filename=esfvSQGWRzGPaFkrq3YTmfhbhPl1mIhJAkaJR068gMgFY6anxvDgeQg2dxtp6ptw&caseno=0jdB0B9yFvdhjgLgcb49410OXzIoh7ZMwR1R0CsaL8w=&cCode=SZ7Oem46NPGlntDbiOv3oA==&appFlag=&state_cd=DytSfGyRsIC664sNz2SgoA==&dist_cd=Wqu661mudHWcCN3nrjIwHw==&court_code=SZ7Oem46NPGlntDbiOv3oA==&bilingual_flag=0",
+      "artifact": null
+    },
+    {
+      "id": "ecourts_delhi_chargesheet_order",
+      "title": "Delhi District Court order mentioning a chargesheet",
+      "source_type": "ecourts_order",
+      "status": "unavailable_404",
+      "url": "https://app.ecourts.gov.in/ecourt_mobile_encrypted_DC/display_pdf.php?filename=Sq9gkTDwlbeFlPocqLfFSZsYsYdiIr3dFlGeTNePkGOZATDid9xT4dOTd7r0agnN&caseno=lJiWrSLnWOBASKH2MgxPDoCeiQvFdPxTzFllBHUNp3s=&cCode=SZ7Oem46NPGlntDbiOv3oA==&appFlag=&state_cd=DytSfGyRsIC664sNz2SgoA==&dist_cd=Wqu661mudHWcCN3nrjIwHw==&court_code=SZ7Oem46NPGlntDbiOv3oA==&bilingual_flag=0",
+      "artifact": null
+    },
+    {
+      "id": "judgment_sharif_ahmad",
+      "title": "Sharif Ahmad v. State of Uttar Pradesh",
+      "court": "Supreme Court of India",
+      "year": "2024",
+      "source_type": "public_judgment",
+      "status": "verified_pdf",
+      "url": "https://indiankanoon.org/doc/13608821/",
+      "artifact": "demo_snapshot/legal_kb/judgments/judgment_4b43569a2bae454aa74f547da35ee0cc.pdf",
+      "sha256": "1ecbf827ec5e63989f92d8e4507f8df04711990dd56c342609e15767226038fa",
+      "page_count": 26
+    },
+    {
+      "id": "judgment_msusha_kant_asiwal",
+      "title": "Msusha Kant Asiwal v. GNCTD",
+      "court": "Delhi High Court",
+      "year": "2014",
+      "source_type": "public_judgment",
+      "status": "verified_pdf",
+      "url": "https://indiankanoon.org/doc/132151361/?type=print",
+      "artifact": "demo_snapshot/legal_kb/judgments/judgment_506a2ef37fce469bae33ac1489d34fb5.pdf",
+      "sha256": "31443a35156a43e22784ffaba6ac087307a07ed8d96869786a632808f955214b",
+      "page_count": 15
+    },
+    {
+      "id": "judgment_sajid",
+      "title": "Sajid v. State, Government of NCT of Delhi",
+      "court": "Delhi High Court",
+      "year": "2021",
+      "source_type": "public_judgment",
+      "status": "verified_pdf",
+      "url": "https://indiankanoon.org/doc/108013980/",
+      "artifact": "demo_snapshot/legal_kb/judgments/judgment_c3cafae074c04927830b92d125f25dc5.pdf",
+      "sha256": "d9bd712dd165dcc83a44c0db3af68be678ddf5a9bff84647d3c16febcad584e6",
+      "page_count": 6
+    },
+    {
+      "id": "judgment_subhash_chandra",
+      "title": "Subhash Chandra v. State of Uttar Pradesh",
+      "court": "Allahabad High Court",
+      "year": "2025",
+      "source_type": "public_judgment",
+      "status": "verified_pdf",
+      "url": "https://indiankanoon.org/doc/137438498/",
+      "artifact": "demo_snapshot/legal_kb/judgments/judgment_7815fca6d4934e11960ea4d583d39b08.pdf",
+      "sha256": "949493be03eab8beeec6832542b5e431edff78ecebcadab0776d2fcdef826df8",
+      "page_count": 22
+    },
+    {
+      "id": "judgment_honnaiah",
+      "title": "Honnaiah T.H. v. State of Karnataka",
+      "court": "Supreme Court of India",
+      "year": "2022",
+      "source_type": "public_judgment",
+      "status": "verified_pdf",
+      "url": "https://indiankanoon.org/docfragment/6802571/?big=3&formInput=%22before+charge+sheet%22&doctypes=supremecourt&sortby=mostrecent",
+      "artifact": "demo_snapshot/legal_kb/judgments/judgment_85a6d561f62b41068de6e29b2021e749.pdf",
+      "sha256": "39994e3bebff9f94b24fe0efb5e01ca2687550f2457503c6a9288194062924df",
+      "page_count": 7
+    }
+  ]
+}

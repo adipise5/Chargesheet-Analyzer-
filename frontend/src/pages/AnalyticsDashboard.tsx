@@ -33,19 +33,20 @@ const STAT_ICONS: Record<string, React.ReactNode> = {
   total_witnesses: <Users size={18} />, total_evidence: <Fingerprint size={18} />,
   total_claims: <Scale size={18} />, total_vehicles: <Car size={18} />,
   total_legal_sections: <Gavel size={18} />, total_findings: <AlertTriangle size={18} />,
+  reference_cases: <Gavel size={18} />,
 }
 
 const STAT_LABELS: Record<string, string> = {
   total_cases: 'Cases', total_documents: 'Documents', total_pages: 'Extracted pages',
   total_accused: 'Extracted accused', total_witnesses: 'Extracted witnesses', total_evidence: 'Evidence records',
   total_claims: 'Extracted claims', total_vehicles: 'Extracted vehicles', total_legal_sections: 'Extracted legal sections',
-  total_findings: 'Generated findings',
+  total_findings: 'Generated findings', reference_cases: 'Public judgment references',
 }
 
 const STAT_HELP: Record<string, string> = {
-  total_cases: 'Number of non-demo cases currently in the local database.',
-  total_documents: 'Uploaded documents linked to non-demo cases.',
-  total_pages: 'Pages successfully extracted from those uploaded documents.',
+  total_cases: 'Number of case records in the selected analytics scope.',
+  total_documents: 'Uploaded documents linked to records in the selected analytics scope.',
+  total_pages: 'Pages successfully extracted from documents in the selected analytics scope.',
   total_accused: 'People classified by the extractor as accused. Zero may mean extraction missed the person, not that no accused is present.',
   total_witnesses: 'People classified by the extractor as witnesses. This is separate from evidence records labelled as witness material.',
   total_evidence: 'Extracted evidence records across all supported evidence types. These are not necessarily independently verified.',
@@ -53,20 +54,23 @@ const STAT_HELP: Record<string, string> = {
   total_vehicles: 'Vehicle entities explicitly extracted from the documents.',
   total_legal_sections: 'Legal-section entities explicitly extracted. A zero count should prompt source review.',
   total_findings: 'Machine-generated review findings, including possible duplicates or graph-linking gaps.',
+  reference_cases: 'Public judgment records available as reference examples; they are excluded from incident charts by default.',
 }
 
 export function AnalyticsDashboard() {
   const { t } = useLanguage()
   const [visibleSeries, setVisibleSeries] = useState({ registered: true, extracted: true, events: true })
-  const summary = useQuery({ queryKey: ['analytics-summary'], queryFn: api.analyticsSummary })
-  const crimeTypes = useQuery({ queryKey: ['analytics-crime-types'], queryFn: api.analyticsCrimeTypes })
-  const temporal = useQuery({ queryKey: ['analytics-temporal'], queryFn: api.analyticsTemporal })
-  const hotspots = useQuery({ queryKey: ['analytics-hotspots'], queryFn: api.analyticsHotspots })
-  const caseStatus = useQuery({ queryKey: ['analytics-case-status'], queryFn: api.analyticsCaseStatus })
-  const evidenceProfile = useQuery({ queryKey: ['analytics-evidence'], queryFn: api.analyticsEvidenceProfile })
-  const entityNetwork = useQuery({ queryKey: ['analytics-entities'], queryFn: api.analyticsEntityNetwork })
-  const findingsSummary = useQuery({ queryKey: ['analytics-findings'], queryFn: api.analyticsFindings })
-  const docRoles = useQuery({ queryKey: ['analytics-doc-roles'], queryFn: api.analyticsDocRoles })
+  const [includeReferenceRecords, setIncludeReferenceRecords] = useState(false)
+  const scopeKey = includeReferenceRecords ? 'all' : 'incident'
+  const summary = useQuery({ queryKey: ['analytics-summary', scopeKey], queryFn: () => api.analyticsSummary(includeReferenceRecords) })
+  const crimeTypes = useQuery({ queryKey: ['analytics-crime-types', scopeKey], queryFn: () => api.analyticsCrimeTypes(includeReferenceRecords) })
+  const temporal = useQuery({ queryKey: ['analytics-temporal', scopeKey], queryFn: () => api.analyticsTemporal(includeReferenceRecords) })
+  const hotspots = useQuery({ queryKey: ['analytics-hotspots', scopeKey], queryFn: () => api.analyticsHotspots(includeReferenceRecords) })
+  const caseStatus = useQuery({ queryKey: ['analytics-case-status', scopeKey], queryFn: () => api.analyticsCaseStatus(includeReferenceRecords) })
+  const evidenceProfile = useQuery({ queryKey: ['analytics-evidence', scopeKey], queryFn: () => api.analyticsEvidenceProfile(includeReferenceRecords) })
+  const entityNetwork = useQuery({ queryKey: ['analytics-entities', scopeKey], queryFn: () => api.analyticsEntityNetwork(includeReferenceRecords) })
+  const findingsSummary = useQuery({ queryKey: ['analytics-findings', scopeKey], queryFn: () => api.analyticsFindings(includeReferenceRecords) })
+  const docRoles = useQuery({ queryKey: ['analytics-doc-roles', scopeKey], queryFn: () => api.analyticsDocRoles(includeReferenceRecords) })
   const translated = useTranslatedTexts([
     ...(hotspots.data || []).map(item => item.station),
     ...(crimeTypes.data || []).map(item => item.section),
@@ -137,6 +141,15 @@ export function AnalyticsDashboard() {
                 </div>
               ))}
             </section>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-3 text-xs text-sky-900">
+              <div>
+                <div className="font-bold">{t('Analytics source scope')}</div>
+                <div className="mt-1 leading-5">{includeReferenceRecords ? t('Showing incident-style records, educational samples, and public judgment references. Reference records can contain legal discussion rather than incident facts.') : t('Showing incident-style and educational sample records only. Public judgment examples remain available in Cases and Precedents but are excluded from crime charts.')}</div>
+              </div>
+              <button onClick={() => setIncludeReferenceRecords(value => !value)} className="rounded-lg border border-sky-300 bg-white px-3 py-2 text-[11px] font-bold text-sky-800 hover:bg-sky-100">
+                {includeReferenceRecords ? t('Use incident records only') : t('Include public judgment records')}
+              </button>
+            </div>
             <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-amber-900">
               <AlertTriangle size={15} className="mt-0.5 shrink-0" />
               <span><strong>{t('Interpretation note:')}</strong> {t('These are extraction and database counts, not verified crime statistics. With only')} {summaryData.total_cases} {t(summaryData.total_cases === 1 ? 'case' : 'cases')}, {t('seasonality and station comparisons are descriptive only. Zero accused, witness, or legal-section counts should be checked against the source documents.')}</span>

@@ -29,8 +29,37 @@ const translations: Record<string, string> = {
   'Hosted demo snapshot · read-only': 'હોસ્ટેડ ડેમો સ્નેપશોટ · માત્ર વાંચન', 'Hosted demonstration': 'હોસ્ટેડ પ્રદર્શન', 'This snapshot is read-only': 'આ સ્નેપશોટ માત્ર વાંચન માટે છે', 'The public demo serves preprocessed case records. Upload, OCR, model inference, and data deletion stay on the local workstation and are not enabled on the free hosted instance.': 'જાહેર ડેમો પૂર્વ-પ્રક્રિયા કરાયેલા કેસ રેકોર્ડ આપે છે. અપલોડ, OCR, મોડેલ ઇન્ફરન્સ અને ડેટા કાઢવાનું સ્થાનિક વર્કસ્ટેશન સુધી મર્યાદિત છે અને મફત હોસ્ટેડ ઇન્સ્ટન્સમાં સક્રિય નથી.', 'Hosted demo snapshot: document review is read-only.': 'હોસ્ટેડ ડેમો સ્નેપશોટ: દસ્તાવેજ ચકાસણી માત્ર વાંચન માટે છે.', 'Hosted demo snapshot: the judgment corpus is preloaded and read-only.': 'હોસ્ટેડ ડેમો સ્નેપશોટ: ચુકાદા સંગ્રહ પહેલેથી લોડ થયેલો અને માત્ર વાંચન માટે છે.', 'This hosted demo answers from precomputed records and source passages. No live model is running here.': 'આ હોસ્ટેડ ડેમો પૂર્વ-ગણતરી કરેલા રેકોર્ડ અને સ્ત્રોત પેસેજમાંથી જવાબ આપે છે. અહીં કોઈ લાઇવ મોડેલ ચાલી રહ્યું નથી.', 'Searching precomputed case sources…': 'પૂર્વ-ગણતરી કરેલા કેસ સ્ત્રોતો શોધાઈ રહ્યા છે…', 'Read-only snapshot': 'માત્ર વાંચન સ્નેપશોટ', 'New analysis': 'નવું વિશ્લેષણ', 'Investigate case structure, claims, evidence, contradictions, and source provenance from one secure local workspace.': 'એક સુરક્ષિત સ્થાનિક વર્કસ્પેસમાંથી કેસની રચના, દાવા, પુરાવા, વિરોધાભાસો અને સ્ત્રોત પ્રોવેનેન્સ તપાસો.', 'Upload case document': 'કેસ દસ્તાવેજ અપલોડ કરો', 'PDF, DOC, or DOCX · Gujarati or English · digital, scanned, or mixed': 'PDF, DOC અથવા DOCX · ગુજરાતી અથવા અંગ્રેજી · ડિજિટલ, સ્કેન કરેલ અથવા મિશ્ર', 'Police station': 'પોલીસ સ્ટેશન', 'Document role': 'દસ્તાવેજની ભૂમિકા', 'Accepted formats: PDF, DOC, DOCX': 'માન્ય ફોર્મેટ: PDF, DOC, DOCX', 'File exceeds the 250 MB limit.': 'ફાઇલ 250 MB મર્યાદા કરતાં મોટી છે.', 'Case ID and a document file are required.': 'કેસ ID અને દસ્તાવેજ ફાઇલ જરૂરી છે.', 'Not specified': 'દર્શાવેલ નથી', 'Upload failed': 'અપલોડ નિષ્ફળ થયું', 'Case already exists': 'કેસ "{case}" પહેલેથી અસ્તિત્વમાં છે', 'at': 'પર', 'This document will be added to the existing case.': 'આ દસ્તાવેજ હાલના કેસમાં ઉમેરવામાં આવશે.', 'A new separate case will be created.': 'નવો અલગ કેસ બનાવવામાં આવશે.', 'Create new instead': 'તેના બદલે નવો બનાવો', 'Add to existing': 'હાલનામાં ઉમેરો', 'Remove file': 'ફાઇલ દૂર કરો', 'ready to validate': 'ચકાસવા માટે તૈયાર', 'Drop document here': 'દસ્તાવેજ અહીં મૂકો', 'PDF, DOC, or DOCX · maximum 250 MB': 'PDF, DOC અથવા DOCX · મહત્તમ 250 MB', 'Processing remains on this device. No case content is sent to external services.': 'પ્રક્રિયા આ ડિવાઇસ પર જ રહે છે. કોઈ કેસ સામગ્રી બાહ્ય સેવાઓને મોકલાતી નથી.', 'Securing upload…': 'અપલોડ સુરક્ષિત કરવામાં આવી રહ્યો છે…', 'Start analysis': 'વિશ્લેષણ શરૂ કરો',
 }
 
+// Keep the source-keyed translation table readable while allowing additions
+// from deployment metadata and analytics controls without duplicating the
+// already-large Gujarati dictionary above.
+const extraTranslations: Record<string, string> = {
+  'Public demonstration snapshot': 'જાહેર પ્રદર્શન સ્નેપશોટ',
+  'Case review workspace': 'કેસ ચકાસણી વર્કસ્પેસ',
+  'Open an existing case workspace or start a new analysis.': 'હાલનું કેસ વર્કસ્પેસ ખોલો અથવા નવું વિશ્લેષણ શરૂ કરો.',
+  'Public demonstration workspace': 'જાહેર પ્રદર્શન વર્કસ્પેસ',
+  'Educational sample': 'શૈક્ષણિક નમૂનો',
+  'Public judgment example': 'જાહેર ચુકાદાનો નમૂનો',
+  'Public court record': 'જાહેર અદાલતી રેકોર્ડ',
+  'EDUCATIONAL SAMPLE — NOT A REAL POLICE RECORD': 'શૈક્ષણિક નમૂનો — વાસ્તવિક પોલીસ રેકોર્ડ નથી',
+  'Incomplete public source set — not a complete chargesheet or live police record.': 'અપૂર્ણ જાહેર સ્ત્રોત સમૂહ — સંપૂર્ણ ચાર્જશીટ અથવા જીવંત પોલીસ રેકોર્ડ નથી.',
+  'This is a public judgment record used to demonstrate source review. It is not a complete chargesheet and must not be treated as a live case file.': 'આ સ્ત્રોત ચકાસણી દર્શાવવા માટેનો જાહેર ચુકાદાનો રેકોર્ડ છે. તે સંપૂર્ણ ચાર્જશીટ નથી અને જીવંત કેસ ફાઇલ તરીકે તેનો ઉપયોગ કરવો નહીં.',
+  'Source attribution': 'સ્ત્રોત શ્રેય',
+  'Public source': 'જાહેર સ્ત્રોત',
+  'Open public source': 'જાહેર સ્ત્રોત ખોલો',
+  'Public judgment references': 'જાહેર ચુકાદાના સંદર્ભો',
+  'Case record / ID': 'કેસ રેકોર્ડ / ID',
+  'Analytics source scope': 'એનાલિટિક્સ સ્ત્રોત વિસ્તાર',
+  'Showing incident-style and educational sample records only. Public judgment examples remain available in Cases and Precedents but are excluded from crime charts.': 'માત્ર ઘટના આધારિત અને શૈક્ષણિક નમૂનાના રેકોર્ડ બતાવવામાં આવી રહ્યા છે. જાહેર ચુકાદાના નમૂનાઓ કેસો અને પૂર્વનિર્ણયોમાં ઉપલબ્ધ છે, પરંતુ ગુનાના ચાર્ટમાંથી બાકાત છે.',
+  'Showing incident-style records, educational samples, and public judgment references. Reference records can contain legal discussion rather than incident facts.': 'ઘટના આધારિત રેકોર્ડ, શૈક્ષણિક નમૂનાઓ અને જાહેર ચુકાદાના સંદર્ભો બતાવવામાં આવી રહ્યા છે. સંદર્ભ રેકોર્ડમાં ઘટના તથ્યોને બદલે કાનૂની ચર્ચા હોઈ શકે છે.',
+  'Use incident records only': 'માત્ર ઘટના રેકોર્ડ વાપરો',
+  'Include public judgment records': 'જાહેર ચુકાદાના રેકોર્ડ ઉમેરો',
+  'Number of incident-style records in the selected analytics scope.': 'પસંદ કરેલા એનાલિટિક્સ વિસ્તારમાં ઘટના આધારિત રેકોર્ડની સંખ્યા.',
+  'Reference records available outside incident charts.': 'ઘટના ચાર્ટની બહાર ઉપલબ્ધ સંદર્ભ રેકોર્ડ્સ.',
+  'Public records are labelled by source type; they are demonstration material, not crime statistics.': 'જાહેર રેકોર્ડ સ્ત્રોતના પ્રકાર પ્રમાણે લેબલ કરેલા છે; તે પ્રદર્શન સામગ્રી છે, ગુનાના આંકડા નથી.',
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<AppLanguage>('english')
-  const value = useMemo(() => ({ language, setLanguage, toggleLanguage: () => setLanguage(current => current === 'english' ? 'gujarati' : 'english'), t: (english: string) => language === 'gujarati' ? translations[english] || english : english }), [language])
+  const value = useMemo(() => ({ language, setLanguage, toggleLanguage: () => setLanguage(current => current === 'english' ? 'gujarati' : 'english'), t: (english: string) => language === 'gujarati' ? translations[english] || extraTranslations[english] || english : english }), [language])
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
 }

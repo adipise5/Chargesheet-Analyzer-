@@ -18,9 +18,10 @@ def create_case(payload: dict, *, is_demo: bool = False, case_id: str | None = N
     identifier = case_id or f"case_{uuid.uuid4().hex}"
     timestamp = now_iso()
     db.execute(
-        "INSERT INTO cases(id,case_number,police_station,language,status,is_demo,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)",
+        "INSERT INTO cases(id,case_number,police_station,language,status,is_demo,record_type,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)",
         (identifier, payload["case_number"], payload.get("police_station", "Not specified"),
-         payload.get("language", "Gujarati / English"), "ready" if is_demo else "created", int(is_demo), timestamp, timestamp),
+         payload.get("language", "Gujarati / English"), "ready" if is_demo else "created", int(is_demo),
+         "educational_sample" if is_demo else payload.get("record_type", "investigation"), timestamp, timestamp),
     )
     db.audit("case_created", identifier)
     return get_case(identifier)
@@ -69,7 +70,8 @@ def delete_case(case_id: str) -> bool:
     return True
 
 
-def save_document(case_id: str, filename: str | None, data: bytes, role: str = "supporting_record") -> dict:
+def save_document(case_id: str, filename: str | None, data: bytes, role: str = "supporting_record",
+                  source_url: str | None = None, document_id: str | None = None) -> dict:
     require_writable()
     if not get_case(case_id):
         raise LookupError("Case not found")
@@ -78,7 +80,7 @@ def save_document(case_id: str, filename: str | None, data: bytes, role: str = "
     duplicate = db.one("SELECT * FROM documents WHERE case_id=? AND sha256=?", (case_id, digest))
     if duplicate:
         return duplicate
-    document_id = f"doc_{uuid.uuid4().hex}"
+    document_id = document_id or f"doc_{uuid.uuid4().hex}"
     # Use the original extension in the stored name so processing can detect file type
     ext = Path(filename or "document.pdf").suffix.lower()
     stored_name = f"{document_id}{ext}"
@@ -102,8 +104,8 @@ def save_document(case_id: str, filename: str | None, data: bytes, role: str = "
                      "forensic_report", "cctv_record", "seizure_memo", "supporting_record"}
     role = role if role in allowed_roles else "supporting_record"
     db.execute(
-        "INSERT INTO documents(id,case_id,filename,stored_name,category,page_count,sha256,status,role,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
-        (document_id, case_id, display_name, stored_name, "unknown", page_count, digest, "uploaded", role, now_iso()),
+        "INSERT INTO documents(id,case_id,filename,stored_name,category,page_count,sha256,status,role,source_url,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        (document_id, case_id, display_name, stored_name, "unknown", page_count, digest, "uploaded", role, source_url, now_iso()),
     )
     db.execute("UPDATE cases SET status='uploaded',updated_at=? WHERE id=?", (now_iso(), case_id))
     db.audit("file_uploaded", case_id, {"document_id": document_id, "count": page_count})

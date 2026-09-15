@@ -26,7 +26,7 @@ async def upload_document(case_id: str, file: UploadFile = File(...), role: str 
 def documents(case_id: str):
     if not get_case(case_id):
         raise HTTPException(404, "Case not found")
-    return db.all("SELECT id,case_id,filename,category,page_count,sha256,status,role,created_at FROM documents WHERE case_id=?", (case_id,))
+    return db.all("SELECT id,case_id,filename,category,page_count,sha256,status,role,source_url,created_at FROM documents WHERE case_id=?", (case_id,))
 
 
 @router.get("/documents/{document_id}/file")

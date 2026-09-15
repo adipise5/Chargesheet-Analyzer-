@@ -13,7 +13,7 @@ from app.storage.sqlite import db
 from app.extraction.date_utils import normalize_date
 
 
-def test_cross_case_analytics_aggregates_non_demo_records():
+def test_cross_case_analytics_aggregates_case_records_and_excludes_only_references():
     first = create_case({"case_number": "ANALYTICS-1", "police_station": "North"})
     second = create_case({"case_number": "ANALYTICS-2", "police_station": "North"})
     demo = create_case({"case_number": "DEMO-ONLY", "police_station": "South"}, is_demo=True)
@@ -29,11 +29,11 @@ def test_cross_case_analytics_aggregates_non_demo_records():
                ("finding-1", first["id"], "contradiction", "{}"))
     db.execute("UPDATE cases SET status='ready' WHERE id=?", (first["id"],))
 
-    assert global_summary()["total_cases"] == 2
-    assert global_summary()["total_accused"] == 2
+    assert global_summary()["total_cases"] == 3
+    assert global_summary()["total_accused"] == 3
     assert crime_type_distribution() == [{"section": "IPC 302", "count": 1}]
-    assert crime_hotspots() == [{"station": "North", "count": 2}]
-    assert set(tuple(item.values()) for item in case_status_distribution()) == {("created", 1), ("ready", 1)}
+    assert crime_hotspots() == [{"station": "North", "count": 2}, {"station": "South", "count": 1}]
+    assert set(tuple(item.values()) for item in case_status_distribution()) == {("created", 1), ("ready", 2)}
     assert evidence_profile() == [{"type": "forensic", "count": 1}]
     assert findings_summary() == [{"type": "contradiction", "count": 1}]
     assert {item["label"] for item in entity_network()} == {"A-1"}
@@ -51,6 +51,29 @@ def test_temporal_analytics_merges_ascii_and_gujarati_dates():
     assert {item["month"] for item in result} == {"2026-03", case["created_at"][:7]}
     march = next(item for item in result if item["month"] == "2026-03")
     assert march["crime_events"] == 2
+
+
+def test_public_judgment_records_are_excluded_from_incident_analytics_by_default():
+    incident = create_case({"case_number": "INCIDENT-SCOPE", "police_station": "Incident Station"})
+    reference = create_case({"case_number": "REFERENCE-SCOPE", "police_station": "Reference Court",
+                             "record_type": "public_judgment"})
+    db.execute("INSERT INTO objects(id,case_id,kind,subtype,label,data_json,confidence) VALUES(?,?,?,?,?,?,?)",
+               ("incident-section", incident["id"], "LegalSection", "legal_section", "IPC 302", "{}", 1.0))
+    db.execute("INSERT INTO objects(id,case_id,kind,subtype,label,data_json,confidence) VALUES(?,?,?,?,?,?,?)",
+               ("reference-section", reference["id"], "LegalSection", "legal_section", "Section 438", "{}", 1.0))
+    db.execute("INSERT INTO objects(id,case_id,kind,subtype,label,data_json,confidence) VALUES(?,?,?,?,?,?,?)",
+               ("reference-event", reference["id"], "Event", "dated_event", "Judgment date",
+                '{"normalized_date":"2024-01-02"}', 1.0))
+
+    default = global_summary()
+    included = global_summary(include_reference_records=True)
+    assert default["total_cases"] == 1
+    assert default["reference_cases"] == 1
+    assert included["total_cases"] == 2
+    assert crime_type_distribution() == [{"section": "IPC 302", "count": 1}]
+    assert {item["section"] for item in crime_type_distribution(True)} == {"IPC 302", "Section 438"}
+    assert all(item["month"] != "2024-01" for item in temporal_distribution())
+    assert any(item["month"] == "2024-01" for item in temporal_distribution(True))
 
 
 def test_date_normalization_handles_gujarati_and_year_first_formats():
