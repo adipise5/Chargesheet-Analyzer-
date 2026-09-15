@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.case import CaseCreate, CaseRecord
+from app.core.runtime_mode import require_writable
 from app.services.case_service import create_case, get_case, get_case_by_number, list_cases
 from app.services.demo_service import load_demo_case
 
@@ -9,6 +10,7 @@ router = APIRouter(prefix="/api", tags=["cases"])
 
 @router.post("/cases", response_model=CaseRecord, status_code=201)
 def post_case(payload: CaseCreate):
+    require_writable()
     return create_case(payload.model_dump())
 
 
@@ -28,6 +30,7 @@ def get_case_route(case_id: str):
 @router.delete("/cases/{case_id}", status_code=204)
 def delete_case_route(case_id: str):
     from app.services.case_service import delete_case
+    require_writable()
     if not delete_case(case_id):
         raise HTTPException(404, detail={"code": "CASE_NOT_FOUND", "message": "Case not found"})
     return None
@@ -35,6 +38,7 @@ def delete_case_route(case_id: str):
 
 @router.post("/demo", response_model=CaseRecord)
 def load_demo():
+    require_writable()
     return load_demo_case()
 
 

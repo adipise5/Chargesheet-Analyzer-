@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { api } from '../api/client'
 import { Loading } from '../components/Loading'
+import { useLanguage, useTranslatedTexts } from '../i18n/languageHooks'
 
 const COLORS = ['#0d9488', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#10b981', '#ec4899', '#6366f1', '#f97316', '#14b8a6']
 const FINDING_COLORS: Record<string, string> = {
@@ -55,6 +56,7 @@ const STAT_HELP: Record<string, string> = {
 }
 
 export function AnalyticsDashboard() {
+  const { t } = useLanguage()
   const [visibleSeries, setVisibleSeries] = useState({ registered: true, extracted: true, events: true })
   const summary = useQuery({ queryKey: ['analytics-summary'], queryFn: api.analyticsSummary })
   const crimeTypes = useQuery({ queryKey: ['analytics-crime-types'], queryFn: api.analyticsCrimeTypes })
@@ -65,12 +67,23 @@ export function AnalyticsDashboard() {
   const entityNetwork = useQuery({ queryKey: ['analytics-entities'], queryFn: api.analyticsEntityNetwork })
   const findingsSummary = useQuery({ queryKey: ['analytics-findings'], queryFn: api.analyticsFindings })
   const docRoles = useQuery({ queryKey: ['analytics-doc-roles'], queryFn: api.analyticsDocRoles })
+  const translated = useTranslatedTexts([
+    ...(hotspots.data || []).map(item => item.station),
+    ...(crimeTypes.data || []).map(item => item.section),
+    ...(evidenceProfile.data || []).map(item => item.type),
+    ...(entityNetwork.data || []).map(item => item.label),
+  ])
+  const tr = (value: string) => translated.translated.get(value) || value
 
   const isLoading = summary.isLoading
   if (isLoading) return <Loading />
 
   const summaryData = summary.data || {}
   const hasData = (summaryData.total_cases || 0) > 0
+  const translatedHotspots = (hotspots.data || []).map(item => ({ ...item, station: tr(item.station) }))
+  const translatedCrimeTypes = (crimeTypes.data || []).map(item => ({ ...item, section: tr(item.section) }))
+  const translatedEvidenceProfile = (evidenceProfile.data || []).map(item => ({ ...item, type: tr(item.type) }))
+  const translatedFindings = (findingsSummary.data || []).map(item => ({ ...item, label: t(formatLabel(item.type)) }))
 
   return (
     <main className="min-h-screen bg-canvas px-8 py-8 lg:px-10">
@@ -84,25 +97,23 @@ export function AnalyticsDashboard() {
                 <BarChart3 size={22} />
               </div>
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-teal-400">Intelligence analytics</div>
-                <h1 className="text-2xl font-bold tracking-tight text-white">Crime pattern analysis</h1>
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-teal-400">{t('Intelligence analytics')}</div>
+                <h1 className="text-2xl font-bold tracking-tight text-white">{t('Crime pattern analysis')}</h1>
               </div>
             </div>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300">
-              Aggregate insights across all cases. Identify seasonal crime patterns, geographic hotspots,
-              evidence gaps, and repeat entities to support strategic policing decisions.
+              {t('Aggregate insights across all cases. Identify seasonal crime patterns, geographic hotspots, evidence gaps, and repeat entities to support strategic policing decisions.')}
             </p>
           </div>
         </header>
 
         {!hasData && (
-          <div className="mt-8 grid min-h-[300px] place-items-center rounded-2xl border border-slate-200 bg-white p-12 text-center">
+            <div className="mt-8 grid min-h-[300px] place-items-center rounded-2xl border border-slate-200 bg-white p-12 text-center">
             <div>
               <Search className="mx-auto text-slate-300" size={48} />
-              <h2 className="mt-5 text-lg font-semibold text-slate-700">No case data available</h2>
+              <h2 className="mt-5 text-lg font-semibold text-slate-700">{t('No case data available')}</h2>
               <p className="mt-2 max-w-md text-sm text-slate-500">
-                Upload FIRs, chargesheets, and other police documents via New Analysis.
-                Analytics will appear here once cases are processed.
+                {t('Upload FIRs, chargesheets, and other police documents via New Analysis. Analytics will appear here once cases are processed.')}
               </p>
             </div>
           </div>
@@ -113,11 +124,11 @@ export function AnalyticsDashboard() {
             {/* Summary Stats */}
             <section className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {Object.entries(summaryData).map(([key, value]) => (
-                <div key={key} aria-label={`${STAT_LABELS[key] || key}: ${STAT_HELP[key]}`} className="animate-fade-in group relative z-0 overflow-visible rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:z-50 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
+                <div key={key} aria-label={`${t(STAT_LABELS[key] || key)}: ${t(STAT_HELP[key] || '')}`} className="animate-fade-in group relative z-0 overflow-visible rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:z-50 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-2xl font-bold tracking-tight text-slate-800">{(value as number).toLocaleString()}</div>
-                      <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{STAT_LABELS[key] || key.replace(/total_/g, '').replace(/_/g, ' ')}<span className="relative normal-case tracking-normal"><Info size={11} className="text-slate-300" /><span className="pointer-events-none absolute left-0 top-full z-[100] mt-2 hidden w-56 rounded-lg bg-slate-900 px-3 py-2 text-left text-[11px] font-normal leading-4 text-white normal-case shadow-xl group-hover:block">{STAT_HELP[key]}</span></span></div>
+                      <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{t(STAT_LABELS[key] || key.replace(/total_/g, '').replace(/_/g, ' '))}<span className="relative normal-case tracking-normal"><Info size={11} className="text-slate-300" /><span className="pointer-events-none absolute left-0 top-full z-[100] mt-2 hidden w-56 rounded-lg bg-slate-900 px-3 py-2 text-left text-[11px] font-normal leading-4 text-white normal-case shadow-xl group-hover:block">{t(STAT_HELP[key] || '')}</span></span></div>
                     </div>
                     <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-teal-50 to-emerald-50 text-teal-600 transition-colors group-hover:from-teal-100 group-hover:to-emerald-100">
                       {STAT_ICONS[key] || <Activity size={18} />}
@@ -128,7 +139,7 @@ export function AnalyticsDashboard() {
             </section>
             <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-amber-900">
               <AlertTriangle size={15} className="mt-0.5 shrink-0" />
-              <span><strong>Interpretation note:</strong> These are extraction and database counts, not verified crime statistics. With only {summaryData.total_cases} case{summaryData.total_cases === 1 ? '' : 's'}, seasonality and station comparisons are descriptive only. Zero accused, witness, or legal-section counts should be checked against the source documents.</span>
+              <span><strong>{t('Interpretation note:')}</strong> {t('These are extraction and database counts, not verified crime statistics. With only')} {summaryData.total_cases} {t(summaryData.total_cases === 1 ? 'case' : 'cases')}, {t('seasonality and station comparisons are descriptive only. Zero accused, witness, or legal-section counts should be checked against the source documents.')}</span>
             </div>
 
             {/* Row: Seasonality + Hotspots */}
@@ -138,12 +149,12 @@ export function AnalyticsDashboard() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-sky-50 text-sky-600"><TrendingUp size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Crime seasonality</h2>
-                    <p className="text-[10px] text-slate-400">Case registrations and extracted events by month</p>
+                    <h2 className="text-sm font-bold text-slate-800">{t('Crime seasonality')}</h2>
+                    <p className="text-[10px] text-slate-400">{t('Case registrations and extracted events by month')}</p>
                     <div className="flex flex-wrap gap-2 text-[10px]">
-                      <SeriesToggle label="Cases registered" color="bg-teal-600" checked={visibleSeries.registered} onChange={() => setVisibleSeries(value => ({ ...value, registered: !value.registered }))} />
-                      <SeriesToggle label="Cases extracted" color="bg-violet-500" checked={visibleSeries.extracted} onChange={() => setVisibleSeries(value => ({ ...value, extracted: !value.extracted }))} />
-                      <SeriesToggle label="Extracted events" color="bg-sky-500" checked={visibleSeries.events} onChange={() => setVisibleSeries(value => ({ ...value, events: !value.events }))} />
+                      <SeriesToggle label={t('Cases registered')} color="bg-teal-600" checked={visibleSeries.registered} onChange={() => setVisibleSeries(value => ({ ...value, registered: !value.registered }))} />
+                      <SeriesToggle label={t('Cases extracted')} color="bg-violet-500" checked={visibleSeries.extracted} onChange={() => setVisibleSeries(value => ({ ...value, extracted: !value.extracted }))} />
+                      <SeriesToggle label={t('Extracted events')} color="bg-sky-500" checked={visibleSeries.events} onChange={() => setVisibleSeries(value => ({ ...value, events: !value.events }))} />
                     </div>
                   </div>
                 </div>
@@ -166,13 +177,13 @@ export function AnalyticsDashboard() {
                         <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
                         <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                        {visibleSeries.registered && <Area type="monotone" dataKey="cases_registered" stroke="#0d9488" fill="url(#casesGrad)" strokeWidth={2} name="Cases registered" />}
-                        {visibleSeries.extracted && <Area type="monotone" dataKey="cases_extracted" stroke="#8b5cf6" fillOpacity={0} strokeWidth={2} strokeDasharray="5 4" name="Cases extracted" />}
-                        {visibleSeries.events && <Area type="monotone" dataKey="crime_events" stroke="#0ea5e9" fill="url(#eventsGrad)" strokeWidth={2} name="Extracted events" />}
+                        {visibleSeries.registered && <Area type="stepAfter" dataKey="cases_registered" stroke="#0d9488" fill="url(#casesGrad)" strokeWidth={2} name={t('Cases registered')} />}
+                        {visibleSeries.extracted && <Area type="stepAfter" dataKey="cases_extracted" stroke="#8b5cf6" fillOpacity={0} strokeWidth={2} strokeDasharray="5 4" name={t('Cases extracted')} />}
+                        {visibleSeries.events && <Area type="stepAfter" dataKey="crime_events" stroke="#0ea5e9" fill="url(#eventsGrad)" strokeWidth={2} name={t('Extracted events')} />}
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
-                ) : <EmptyChart message="No temporal data yet" />}
+                ) : <EmptyChart message={t('No temporal data yet')} />}
               </section>
 
               {/* Crime Hotspots */}
@@ -180,19 +191,19 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-rose-50 text-rose-500"><MapPin size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Crime hotspots</h2>
-                    <p className="text-[10px] text-slate-400">Cases grouped by police station—not geographic hotspots</p>
+                    <h2 className="text-sm font-bold text-slate-800">{t('Crime hotspots')}</h2>
+                    <p className="text-[10px] text-slate-400">{t('Cases grouped by police station—not geographic hotspots')}</p>
                   </div>
                 </div>
                 {(hotspots.data?.length || 0) > 0 ? (
                   <div className="mt-5 h-[280px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={hotspots.data} layout="vertical" margin={{ left: 20 }}>
+                      <BarChart data={translatedHotspots} layout="vertical" margin={{ left: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis type="number" tick={{ fontSize: 10 }} stroke="#94a3b8" />
                         <YAxis dataKey="station" type="category" width={120} tick={{ fontSize: 10 }} stroke="#94a3b8" />
                         <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                        <Bar dataKey="count" name="Cases" radius={[0, 6, 6, 0]}>
+                        <Bar dataKey="count" name={t('Cases')} radius={[0, 6, 6, 0]}>
                           {hotspots.data?.map((_, i) => (
                             <Cell key={i} fill={`hsl(${170 + i * 25}, 70%, ${45 + i * 5}%)`} />
                           ))}
@@ -200,7 +211,7 @@ export function AnalyticsDashboard() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                ) : <EmptyChart message="No station data yet" />}
+                ) : <EmptyChart message={t('No station data yet')} />}
               </section>
             </div>
 
@@ -211,8 +222,8 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-violet-50 text-violet-600"><Gavel size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Extracted legal sections</h2>
-                    <p className="text-[10px] text-slate-400">IPC / BNS frequency</p>
+                    <h2 className="text-sm font-bold text-slate-800">{t('Extracted legal sections')}</h2>
+                    <p className="text-[10px] text-slate-400">{t('IPC / BNS frequency')}</p>
                   </div>
                 </div>
                 {(crimeTypes.data?.length || 0) > 0 ? (
@@ -220,7 +231,7 @@ export function AnalyticsDashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={crimeTypes.data?.slice(0, 8)}
+                          data={translatedCrimeTypes.slice(0, 8)}
                           dataKey="count"
                           nameKey="section"
                           cx="50%"
@@ -230,7 +241,7 @@ export function AnalyticsDashboard() {
                           paddingAngle={3}
                           stroke="none"
                         >
-                          {crimeTypes.data?.slice(0, 8).map((_, i) => (
+                          {translatedCrimeTypes.slice(0, 8).map((_, i) => (
                             <Cell key={i} fill={COLORS[i % COLORS.length]} />
                           ))}
                         </Pie>
@@ -239,7 +250,7 @@ export function AnalyticsDashboard() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                ) : <EmptyChart message="No legal sections extracted" />}
+                ) : <EmptyChart message={t('No legal sections extracted')} />}
               </section>
 
               {/* Evidence Profile */}
@@ -247,23 +258,23 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-50 text-amber-600"><Fingerprint size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Extracted evidence profile</h2>
-                    <p className="text-[10px] text-slate-400">Type distribution</p>
+                    <h2 className="text-sm font-bold text-slate-800">{t('Extracted evidence profile')}</h2>
+                    <p className="text-[10px] text-slate-400">{t('Type distribution')}</p>
                   </div>
                 </div>
                 {(evidenceProfile.data?.length || 0) > 0 ? (
                   <div className="mt-5 h-[250px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={evidenceProfile.data}>
+                      <RadarChart data={translatedEvidenceProfile}>
                         <PolarGrid stroke="#e2e8f0" />
                         <PolarAngleAxis dataKey="type" tick={{ fontSize: 10 }} />
                         <PolarRadiusAxis tick={{ fontSize: 9 }} />
-                        <Radar dataKey="count" stroke="#0d9488" fill="#0d9488" fillOpacity={0.25} strokeWidth={2} name="Evidence items" />
+                        <Radar dataKey="count" stroke="#0d9488" fill="#0d9488" fillOpacity={0.25} strokeWidth={2} name={t('Evidence items')} />
                         <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
-                ) : <EmptyChart message="No evidence data yet" />}
+                ) : <EmptyChart message={t('No evidence data yet')} />}
               </section>
 
               {/* Case Pipeline */}
@@ -271,8 +282,8 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-50 text-emerald-600"><Activity size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Case pipeline</h2>
-                    <p className="text-[10px] text-slate-400">Resolution status</p>
+                    <h2 className="text-sm font-bold text-slate-800">{t('Case pipeline')}</h2>
+                    <p className="text-[10px] text-slate-400">{t('Resolution status')}</p>
                   </div>
                 </div>
                 {(caseStatus.data?.length || 0) > 0 ? (
@@ -283,7 +294,7 @@ export function AnalyticsDashboard() {
                       return (
                         <div key={item.status}>
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-semibold text-slate-600">{formatLabel(item.status)}</span>
+                            <span className="font-semibold text-slate-600">{t(formatLabel(item.status))}</span>
                             <span className="font-bold text-slate-800">{item.count} <span className="font-normal text-slate-400">({pct}%)</span></span>
                           </div>
                           <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-slate-100">
@@ -296,7 +307,7 @@ export function AnalyticsDashboard() {
                       )
                     })}
                   </div>
-                ) : <EmptyChart message="No case data" />}
+                ) : <EmptyChart message={t('No case data')} />}
               </section>
             </div>
 
@@ -307,19 +318,19 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-red-50 text-red-500"><AlertTriangle size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Generated findings breakdown</h2>
-                    <p className="text-[10px] text-slate-400">Types of issues detected</p>
+                    <h2 className="text-sm font-bold text-slate-800">{t('Generated findings breakdown')}</h2>
+                    <p className="text-[10px] text-slate-400">{t('Types of issues detected')}</p>
                   </div>
                 </div>
                 {(findingsSummary.data?.length || 0) > 0 ? (
                   <div className="mt-5 h-[240px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={findingsSummary.data}>
+                      <BarChart data={translatedFindings}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="type" tick={{ fontSize: 9 }} stroke="#94a3b8" tickFormatter={formatLabel} />
+                        <XAxis dataKey="label" tick={{ fontSize: 9 }} stroke="#94a3b8" />
                         <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} labelFormatter={(label) => formatLabel(String(label))} />
-                        <Bar dataKey="count" name="Findings" radius={[6, 6, 0, 0]}>
+                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                        <Bar dataKey="count" name={t('Findings')} radius={[6, 6, 0, 0]}>
                           {findingsSummary.data?.map((item, i) => (
                             <Cell key={i} fill={FINDING_COLORS[item.type] || COLORS[i % COLORS.length]} />
                           ))}
@@ -327,7 +338,7 @@ export function AnalyticsDashboard() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                ) : <EmptyChart message="No findings data yet" />}
+                ) : <EmptyChart message={t('No findings data yet')} />}
               </section>
 
               {/* Entity Network */}
@@ -335,8 +346,8 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600"><Users size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Repeated entities</h2>
-                    <p className="text-[10px] text-slate-400">Entities appearing in more than one case</p>
+                    <h2 className="text-sm font-bold text-slate-800">{t('Repeated entities')}</h2>
+                    <p className="text-[10px] text-slate-400">{t('Entities appearing in more than one case')}</p>
                   </div>
                 </div>
                 {(entityNetwork.data?.length || 0) > 0 ? (
@@ -344,22 +355,22 @@ export function AnalyticsDashboard() {
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-slate-100 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                          <th className="pb-2 pr-3">Entity</th>
-                          <th className="pb-2 pr-3">Type</th>
-                          <th className="pb-2 text-right">Cases</th>
+                          <th className="pb-2 pr-3">{t('Entity')}</th>
+                          <th className="pb-2 pr-3">{t('Type')}</th>
+                          <th className="pb-2 text-right">{t('Cases')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {entityNetwork.data?.map((item, i) => (
                           <tr key={i} className="border-b border-slate-50 transition-colors hover:bg-slate-50">
-                            <td className="py-2.5 pr-3 font-semibold text-slate-700">{item.label}</td>
+                            <td className="py-2.5 pr-3 font-semibold text-slate-700">{tr(item.label)}</td>
                             <td className="py-2.5 pr-3">
                               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold
                                 ${item.kind === 'Accused' ? 'bg-red-50 text-red-700' :
                                   item.kind === 'Witness' ? 'bg-blue-50 text-blue-700' :
                                   item.kind === 'Vehicle' ? 'bg-amber-50 text-amber-700' :
                                   'bg-slate-100 text-slate-600'}`}>
-                                {item.kind}
+                                {t(item.kind)}
                               </span>
                             </td>
                             <td className="py-2.5 text-right font-bold text-teal-700">{item.case_count}</td>
@@ -368,7 +379,7 @@ export function AnalyticsDashboard() {
                       </tbody>
                     </table>
                   </div>
-                ) : <EmptyChart message="No entities extracted yet" />}
+                ) : <EmptyChart message={t('No entities extracted yet')} />}
               </section>
             </div>
 
@@ -378,15 +389,15 @@ export function AnalyticsDashboard() {
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-teal-50 text-teal-600"><FileText size={16} /></div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800">Document types uploaded</h2>
-                    <p className="text-[10px] text-slate-400">Distribution of document roles</p>
+                      <h2 className="text-sm font-bold text-slate-800">{t('Document types uploaded')}</h2>
+                      <p className="text-[10px] text-slate-400">{t('Distribution of document roles')}</p>
                   </div>
                 </div>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {docRoles.data?.map((item, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 transition-colors hover:border-teal-200 hover:bg-teal-50/30">
                       <div className="text-lg font-bold text-teal-700">{item.count}</div>
-                      <div className="text-xs font-semibold text-slate-600">{formatLabel(item.role)}</div>
+                      <div className="text-xs font-semibold text-slate-600">{t(formatLabel(item.role))}</div>
                     </div>
                   ))}
                 </div>
@@ -395,8 +406,7 @@ export function AnalyticsDashboard() {
 
             {/* Footer note */}
             <div className="mt-8 rounded-xl border border-amber-100 bg-amber-50/60 p-4 text-xs leading-5 text-amber-800">
-              <strong>Offline analytics:</strong> All statistics are computed locally from your uploaded case documents.
-              No data leaves this device. Analytics accuracy improves as more cases are processed through the system.
+              <strong>{t('Offline analytics:')}</strong> {t('All statistics are computed locally from your uploaded case documents. No data leaves this device. Analytics accuracy improves as more cases are processed through the system.')}
             </div>
           </>
         )}

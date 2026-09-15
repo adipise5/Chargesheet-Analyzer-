@@ -5,7 +5,7 @@ import { api } from '../../api/client'
 import { CitationButton } from '../../components/CitationButton'
 import { Loading } from '../../components/Loading'
 import type { Citation } from '../../types'
-import { useLanguage, useTranslatedTexts } from '../../i18n/LanguageContext'
+import { useLanguage, useTranslatedTexts } from '../../i18n/languageHooks'
 
 export function TimelineView({ caseId, onCitation }: { caseId: string; onCitation: (value: Citation) => void }) {
   const { t } = useLanguage()

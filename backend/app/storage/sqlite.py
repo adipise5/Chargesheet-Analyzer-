@@ -73,6 +73,14 @@ CREATE TABLE IF NOT EXISTS translation_cache (
   translated_text TEXT NOT NULL, created_at TEXT NOT NULL,
   PRIMARY KEY(text_hash, target)
 );
+CREATE TABLE IF NOT EXISTS query_cache (
+  id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+  question_key TEXT NOT NULL, question TEXT NOT NULL, source_fingerprint TEXT NOT NULL,
+  answer TEXT NOT NULL, citations_json TEXT NOT NULL DEFAULT '[]',
+  retrieval_json TEXT NOT NULL DEFAULT '[]', confidence REAL NOT NULL DEFAULT 0,
+  review_required INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL,
+  UNIQUE(case_id, question_key, source_fingerprint)
+);
 CREATE INDEX IF NOT EXISTS idx_documents_case ON documents(case_id);
 CREATE INDEX IF NOT EXISTS idx_pages_case ON pages(case_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_case ON chunks(case_id);
@@ -80,6 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_objects_case ON objects(case_id);
 CREATE INDEX IF NOT EXISTS idx_relations_case ON relations(case_id);
 CREATE INDEX IF NOT EXISTS idx_findings_case ON findings(case_id);
 CREATE INDEX IF NOT EXISTS idx_judgment_chunks_judgment ON judgment_chunks(judgment_id);
+CREATE INDEX IF NOT EXISTS idx_query_cache_case ON query_cache(case_id);
 """
 
 

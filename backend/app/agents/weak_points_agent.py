@@ -13,9 +13,13 @@ def weak_findings(objects: list[dict], chunks_by_id: dict[str, dict]) -> list[di
             continue
         citation = {"document_id": chunk["document_id"], "page": chunk["page_number"], "chunk_id": chunk["id"],
                     "label": f"Single located source — p{chunk['page_number']}"}
-        claim = item["label"][:180]
+        claim = " ".join(item["label"].split())[:180]
         findings.append({"id": f"finding_{uuid.uuid4().hex[:10]}", "type": "weak_point",
-                         "title": item["label"][:100],
+                         # A raw sentence can be a truncated OCR fragment
+                         # (for example, ending in "for"), which is not a
+                         # useful heading. Keep the exact claim in the body
+                         # and use a stable, source-grounded title instead.
+                         "title": f"Single-source claim on page {chunk['page_number']}",
                          "summary": f"This extracted claim — {claim} — is linked to only one source passage (page {chunk['page_number']}). No second document or independent supporting link was located in the uploaded record.",
                          "classification": "LIMITED_CORROBORATION", "confidence": 0.68,
                          "supporting_sources": [citation], "contradicting_sources": [], "entities": [],

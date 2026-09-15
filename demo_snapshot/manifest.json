@@ -1,0 +1,25 @@
+{
+  "format": 1,
+  "created_at": "2026-09-15T16:17:09.863313+00:00",
+  "source_is_runtime_only": true,
+  "counts": {
+    "cases": 1,
+    "documents": 1,
+    "pages": 3,
+    "chunks": 9,
+    "objects": 33,
+    "relations": 32,
+    "findings": 6,
+    "jobs": 1,
+    "audits": 0,
+    "judgments": 5,
+    "judgment_chunks": 76,
+    "translation_cache": 147,
+    "query_cache": 4
+  },
+  "contents": [
+    "chargesheet.db",
+    "cases/",
+    "legal_kb/"
+  ]
+}

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: chargesheet-intelligence-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: render_demo
+      - key: APP_HOST
+        value: 0.0.0.0
+      - key: DEMO_SNAPSHOT_MODE
+        value: "true"
+      - key: DEMO_SNAPSHOT_DIR
+        value: /app/demo_snapshot

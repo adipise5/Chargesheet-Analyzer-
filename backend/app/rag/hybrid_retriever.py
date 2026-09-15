@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.core.runtime_mode import is_read_only_demo
+
 from .graph_retriever import GraphRetriever
 from .lexical_retriever import LexicalRetriever
 from .semantic_retriever import SemanticRetriever
@@ -20,14 +22,15 @@ class HybridRetriever:
     def __init__(self):
         self.lexical = LexicalRetriever()
         self.graph = GraphRetriever()
-        self.semantic = SemanticRetriever()
+        self.semantic = None if is_read_only_demo() else SemanticRetriever()
 
     def retrieve(self, question: str, graph: dict, chunks: list[dict], limit: int = 12) -> list[dict]:
         lists = [self.graph.retrieve(question, graph, chunks), self.lexical.retrieve(question, chunks)]
-        try:
-            lists.append(self.semantic.retrieve(question, chunks))
-        except Exception:
-            # Local model readiness is returned in API system status; no remote fallback is attempted.
-            pass
+        if self.semantic is not None and not is_read_only_demo():
+            try:
+                lists.append(self.semantic.retrieve(question, chunks))
+            except Exception:
+                # Local model readiness is returned in API system status; no remote fallback is attempted.
+                pass
         return reciprocal_rank_fusion(lists, limit=limit)
 

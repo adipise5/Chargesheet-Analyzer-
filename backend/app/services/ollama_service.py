@@ -7,6 +7,7 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from app.core.model_config import ModelConfig
+from app.core.runtime_mode import is_read_only_demo
 from .llm_provider import LLMProvider
 
 T = TypeVar("T", bound=BaseModel)
@@ -18,6 +19,8 @@ class LocalModelUnavailable(RuntimeError):
 
 class OllamaService(LLMProvider):
     def __init__(self, config: ModelConfig | None = None):
+        if is_read_only_demo():
+            raise LocalModelUnavailable("Model inference is disabled in the hosted demo")
         self.config = config or ModelConfig.from_env()
 
     def health(self) -> dict:
@@ -69,9 +72,10 @@ class OllamaService(LLMProvider):
         except Exception as exc:
             raise LocalModelUnavailable(f"Local vision model unavailable: {exc}") from exc
 
-    def answer(self, prompt: str) -> str:
+    def _answer(self, prompt: str, *, max_output_tokens: int = 768,
+                fail_on_truncation: bool = False, append_limit_notice: bool = True) -> str:
         payload = {"model": self.config.llm_model, "stream": False, "think": False,
-                   "options": {"temperature": 0.1, "num_ctx": 12288, "num_predict": 768},
+                   "options": {"temperature": 0.1, "num_ctx": 12288, "num_predict": max_output_tokens},
                    "messages": [{"role": "user", "content": prompt}]}
         try:
             with httpx.Client(timeout=180, trust_env=False) as client:
@@ -81,8 +85,26 @@ class OllamaService(LLMProvider):
             content = result["message"]["content"].strip()
             if not content:
                 raise LocalModelUnavailable("Local model returned an empty answer")
-            if result.get("done_reason") == "length":
+            if result.get("done_reason") == "length" and fail_on_truncation:
+                raise LocalModelUnavailable("Local model response exceeded the bounded response length")
+            if result.get("done_reason") == "length" and append_limit_notice:
                 content += "\n\nThe model reached its response limit. Ask a narrower question for more detail."
             return content
+        except LocalModelUnavailable:
+            raise
         except Exception as exc:
             raise LocalModelUnavailable(f"Local model unavailable: {exc}") from exc
+
+    def answer(self, prompt: str) -> str:
+        """Return a model answer while preserving the legacy soft limit notice."""
+        return self._answer(prompt)
+
+    def answer_bounded(self, prompt: str, max_output_tokens: int = 520) -> str:
+        """Return only a complete answer; truncated model output is rejected.
+
+        Legal-research and case Q&A callers use this path so an incomplete
+        response is replaced by a source-only fallback instead of being shown
+        as if it were a finished conclusion.
+        """
+        return self._answer(prompt, max_output_tokens=max_output_tokens,
+                            fail_on_truncation=True, append_limit_notice=False)

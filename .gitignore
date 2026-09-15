@@ -29,10 +29,17 @@ build/
 # Runtime case uploads and local databases
 data/cases/*
 !data/cases/.gitkeep
+data/legal_kb/*
 data/*.db
 data/*.db-*
 data/*.sqlite
 data/*.sqlite-*
+
+# Optional Render snapshot bundle. Keep generated case data out of normal
+# source history; add it only in the deployment artifact/repository you intend
+# to publish.
+demo_snapshot/*
+!demo_snapshot/.gitkeep
 
 # Downloaded model weights (keep only the directory placeholder)
 models/*

@@ -18,4 +18,5 @@ export type PageRecord = {
 }
 export type CaseTab = 'Overview' | 'Analysis' | 'Defense' | 'Precedents' | 'Evidence' | 'Timeline' | 'Graph' | 'Documents' | 'Ask Case'
 export type Judgment = { id: string; title: string; court: string; judgment_year: string; filename: string; page_count: number }
+export type RuntimeHealth = { status: string; mode?: string; read_only?: boolean; models_required?: boolean; llm_model?: string | null; embedding_model?: string | null; ollama: { available: boolean; missing: string[]; disabled?: boolean }; tesseract: { available: boolean; message: string }; neo4j: { available: boolean; mode: string } }
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from app.agents.timeline_agent import timeline_from_objects
 from app.core.config import settings
+from app.core.runtime_mode import require_writable
 from app.extraction.document_classifier import classify_document
 from app.extraction.entity_resolution import normalize_text
 from app.graph.builder import build_graph
@@ -61,6 +62,7 @@ def chunk_text(text: str, size: int = 1400, overlap: int = 180) -> list[str]:
 
 
 def process_case(case_id: str) -> None:
+    require_writable()
     counts = {"total_pages": 0, "native_pages": 0, "ocr_pages": 0, "gujarati_pages": 0,
               "english_pages": 0, "mixed_pages": 0, "low_confidence_pages": 0,
               "entities": 0, "evidence": 0, "claims": 0}

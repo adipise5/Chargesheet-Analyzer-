@@ -1,4 +1,4 @@
-import type { Case, Citation, DocumentRecord, Finding, GraphData, Judgment, PageRecord } from '../types'
+import type { Case, Citation, DocumentRecord, Finding, GraphData, Judgment, PageRecord, RuntimeHealth } from '../types'
 
 const API = '/api'
 
@@ -37,14 +37,14 @@ export const api = {
   reviews: (caseId: string) => request<PageRecord[]>(`/cases/${caseId}/ocr/review`),
   updateReview: (caseId: string, pageId: string, status: string, corrected_text?: string) => request(`/cases/${caseId}/ocr/review/${pageId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, corrected_text }) }),
   query: (caseId: string, question: string) => request<{ answer: string; citations: Citation[]; confidence: number; review_required: boolean }>(`/cases/${caseId}/query`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) }),
-  health: () => request<{ status: string; llm_model: string; embedding_model: string; ollama: { available: boolean; missing: string[] }; tesseract: { available: boolean; message: string }; neo4j: { available: boolean; mode: string } }>('/system/health'),
+  health: () => request<RuntimeHealth>('/system/health'),
   purgeData: () => request<{ status: string; removed: Record<string, number> }>('/system/purge', { method: 'DELETE' }),
   translate: (texts: string[], target: 'english' | 'gujarati') => request<{ translations: string[]; fallback?: boolean }>('/system/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texts, target }) }),
   caseByNumber: (caseNumber: string) => request<Case>(`/cases/by-number/${encodeURIComponent(caseNumber)}`).catch(() => null),
   // Analytics endpoints
   analyticsSummary: () => request<Record<string, number>>('/analytics/summary'),
   analyticsCrimeTypes: () => request<Array<{ section: string; count: number }>>('/analytics/crime-types'),
-  analyticsTemporal: () => request<Array<{ month: string; cases_registered: number; crime_events: number }>>('/analytics/temporal'),
+  analyticsTemporal: () => request<Array<{ month: string; cases_registered: number; cases_extracted: number; crime_events: number }>>('/analytics/temporal'),
   analyticsHotspots: () => request<Array<{ station: string; count: number }>>('/analytics/hotspots'),
   analyticsCaseStatus: () => request<Array<{ status: string; count: number }>>('/analytics/case-status'),
   analyticsEvidenceProfile: () => request<Array<{ type: string; count: number }>>('/analytics/evidence-profile'),

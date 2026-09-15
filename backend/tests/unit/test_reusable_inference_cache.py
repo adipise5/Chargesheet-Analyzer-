@@ -53,3 +53,16 @@ def test_translation_is_reused_and_english_source_skips_model(monkeypatch):
     assert second["translations"] == ["English translation"]
     assert identity["translations"] == ["Already English"]
     assert len(calls) == 1
+
+
+def test_translation_parser_accepts_qwen_nested_array_without_rendering_source(monkeypatch):
+    class FakeOllama:
+        def answer(self, prompt):
+            return '[["આ કેસમાં કોઈ ભૌતિક પુરાવા નથી."], "This case has no physical evidence."]'
+
+    monkeypatch.setattr("app.services.ollama_service.OllamaService", FakeOllama)
+    result = system.translate(system.TranslationRequest(
+        texts=["This case has no physical evidence."], target="gujarati"
+    ))
+
+    assert result["translations"] == ["આ કેસમાં કોઈ ભૌતિક પુરાવા નથી."]

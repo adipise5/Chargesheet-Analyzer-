@@ -8,10 +8,14 @@ from pathlib import Path
 
 from app.core.config import settings
 from app.core.security import safe_display_filename, validate_pdf_bytes
+from app.core.runtime_mode import require_writable
 from app.extraction.entity_resolution import normalize_text
 from app.ingestion.pdf_loader import inspect_pdf
 from app.services.ollama_service import OllamaService
 from app.storage.sqlite import db, now_iso
+
+
+PRECEDENT_PROMPT_VERSION = "v3"
 
 
 def _root() -> Path:
@@ -21,6 +25,7 @@ def _root() -> Path:
 
 
 def save_judgment(filename: str | None, data: bytes, title: str = "", court: str = "", year: str = "") -> dict:
+    require_writable()
     validate_pdf_bytes(data, filename, settings.max_upload_bytes)
     judgment_id = f"judgment_{uuid.uuid4().hex}"
     safe_name = safe_display_filename(filename)
@@ -64,6 +69,7 @@ def _precedent_fingerprint(case_id: str, findings: list[dict], judgment_rows: li
         except (TypeError, json.JSONDecodeError):
             stable_findings.append(row["data_json"])
     payload = {
+        "prompt_version": PRECEDENT_PROMPT_VERSION,
         "case_id": case_id,
         "findings": stable_findings,
         "judgments": [
@@ -102,12 +108,22 @@ def analyze_precedents(case_id: str) -> dict:
         result = {"insights": "No relevant local judgments were found. Import approved local judgments before using precedent analysis.", "citations": [], "review_required": True, "matches": []}
         db.execute("UPDATE cases SET precedents_json=?,precedents_fingerprint=? WHERE id=?", (json.dumps(result, ensure_ascii=False), fingerprint, case_id))
         return result
-    context = "\n\n".join(f"SOURCE {index + 1} ({row['title']}, page {row['page_number']}):\n{row['text'][:4500]}" for index, row in enumerate(selected))
-    prompt = ("You are a local legal-research assistant. Based only on the supplied judgment excerpts, identify recurring prosecution weaknesses or court concerns relevant to this case. "
-              "Do not state that a court will reach a particular result, do not invent holdings, and distinguish quotation from inference. Give practical verification points for the investigating officer. Cite SOURCE numbers.\n\n" + context)
+    context = "\n\n".join(f"SOURCE {index + 1} ({row['title']}, page {row['page_number']}):\n{' '.join(row['text'].split())[:1900]}" for index, row in enumerate(selected[:6]))
+    prompt = ("You are a cautious local legal-research assistant. Use only the supplied judgment excerpts. "
+              "Return at most 4 short plain-text bullets (no Markdown headings or bold markers). "
+              "For each bullet, state the source-backed court concern and one practical verification point for the investigating officer. "
+              "Cite the supplied SOURCE number. Do not invent a holding, statutory meaning, fact, identity, or outcome. "
+              "Do not say a court will decide anything. Keep allegations, observations, and legal conclusions distinct. "
+              "Every item requires human/legal review.\n\n" + context)
     try:
-        insights = OllamaService().answer(prompt)
-        review_required = False
+        service = OllamaService()
+        bounded = getattr(service, "answer_bounded", None)
+        insights = bounded(prompt) if bounded else service.answer(prompt)
+        # The model is advisory even when it responds successfully. The UI
+        # must never present precedent synthesis as an authoritative finding.
+        insights = insights.replace("###", "").replace("**", "")
+        insights = insights.replace("The model reached its response limit. Ask a narrower question for more detail.", "").strip()
+        review_required = True
     except Exception:
         excerpts = [" ".join(row["text"].split())[:400] for row in selected[:5]]
         insights = "Relevant local judgment passages were found. Review them for recurring concerns before drawing any legal conclusion:\n" + "\n".join(

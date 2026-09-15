@@ -18,3 +18,10 @@ def test_gujarati_date_is_normalized_and_time_is_ascii():
     assert len(events) == 1
     assert events[0]["data"]["normalized_date"] == "2026-03-13"
     assert events[0]["data"]["time"] == "14:30"
+
+
+def test_date_field_label_uses_the_nearest_form_heading():
+    text = "13. Date of Arrest : 17/12/2014 15. Date of sending to Court : 18/12/2014"
+    events = extract_events(text, "chunk-fields")
+    assert [event["label"] for event in events] == ["Date of arrest", "Date sent to court"]
+    assert all(event["data"]["date_uncertain"] is False for event in events)

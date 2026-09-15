@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 
 from app.core.config import settings
+from app.core.runtime_mode import require_writable
 from app.core.security import safe_display_filename, validate_upload_bytes, UploadValidationError
 from app.ingestion.pdf_loader import inspect_pdf
 from app.storage.filesystem import storage
@@ -13,6 +14,7 @@ from app.storage.sqlite import db, now_iso
 
 
 def create_case(payload: dict, *, is_demo: bool = False, case_id: str | None = None) -> dict:
+    require_writable()
     identifier = case_id or f"case_{uuid.uuid4().hex}"
     timestamp = now_iso()
     db.execute(
@@ -47,6 +49,7 @@ def list_cases() -> list[dict]:
 
 
 def delete_case(case_id: str) -> bool:
+    require_writable()
     if not get_case(case_id):
         return False
     # Manually delete rows for tables without CASCADE
@@ -67,6 +70,7 @@ def delete_case(case_id: str) -> bool:
 
 
 def save_document(case_id: str, filename: str | None, data: bytes, role: str = "supporting_record") -> dict:
+    require_writable()
     if not get_case(case_id):
         raise LookupError("Case not found")
     file_type = validate_upload_bytes(data, filename, settings.max_upload_bytes)

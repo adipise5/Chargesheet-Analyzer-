@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.extraction.entity_resolution import normalize_text
+from app.core.runtime_mode import require_writable
 from app.graph.builder import build_graph
 from app.graph.repository import graph_repository
 from app.services.analysis_service import generate_findings
@@ -35,6 +36,7 @@ def review_queue(case_id: str):
 
 @router.patch("/review/{page_id}")
 def update_review(case_id: str, page_id: str, payload: ReviewUpdate):
+    require_writable()
     row = db.one("SELECT * FROM pages WHERE id=? AND case_id=?", (page_id, case_id))
     if not row:
         raise HTTPException(404, "Page not found")
