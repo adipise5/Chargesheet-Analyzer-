@@ -49,6 +49,10 @@ models/*
 *.swp
 *.swo
 
+# Sensitive police documents — never commit sample FIRs or chargesheets
+/*.doc
+/*.docx
+
 # Operating-system metadata
 .DS_Store
 Thumbs.db

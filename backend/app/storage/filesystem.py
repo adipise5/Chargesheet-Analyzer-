@@ -23,10 +23,10 @@ class DocumentStorage(DocumentStorageInterface):
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def document_path(self, case_id: str, document_id: str) -> Path:
+    def document_path(self, case_id: str, document_id: str, extension: str = ".pdf") -> Path:
         directory = ensure_case_path(settings.cases_dir, case_id, "documents")
         directory.mkdir(parents=True, exist_ok=True)
-        return directory / f"{document_id}.pdf"
+        return directory / f"{document_id}{extension}"
 
     def page_image_path(self, case_id: str, document_id: str, page: int) -> Path:
         directory = ensure_case_path(settings.cases_dir, case_id, "pages", document_id)

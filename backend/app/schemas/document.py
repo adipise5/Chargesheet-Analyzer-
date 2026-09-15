@@ -9,6 +9,7 @@ class DocumentRecord(BaseModel):
     page_count: int = 0
     sha256: str
     status: str
+    role: str = "supporting_record"
 
 
 class PageRecord(BaseModel):

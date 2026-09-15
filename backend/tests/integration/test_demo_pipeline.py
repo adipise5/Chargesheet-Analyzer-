@@ -1,3 +1,5 @@
+import json
+
 from app.services.demo_service import load_demo_case
 from app.services.analysis_service import get_findings
 from app.services.query_service import query_case
@@ -38,7 +40,10 @@ def test_native_pdf_runs_real_processing_pipeline(tmp_path):
     save_document(case["id"], "synthetic.pdf", source.read_bytes())
     process_case(case["id"])
     stored = db.one("SELECT status FROM cases WHERE id=?", (case["id"],))
+    cached_summary = db.one("SELECT summary_json,summary_fingerprint FROM cases WHERE id=?", (case["id"],))
     page_row = db.one("SELECT extraction_method,ocr_confidence FROM pages WHERE case_id=?", (case["id"],))
     assert stored["status"] == "ready"
+    assert json.loads(cached_summary["summary_json"])["english"]
+    assert cached_summary["summary_fingerprint"]
     assert page_row == {"extraction_method": "native_pdf", "ocr_confidence": 100.0}
     assert graph_repository.data(case["id"])["nodes"]

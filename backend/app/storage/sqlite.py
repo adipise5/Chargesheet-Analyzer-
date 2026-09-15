@@ -16,13 +16,15 @@ PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS cases (
   id TEXT PRIMARY KEY, case_number TEXT NOT NULL, police_station TEXT NOT NULL,
   language TEXT NOT NULL, status TEXT NOT NULL, is_demo INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+  summary_json TEXT, summary_fingerprint TEXT,
+  precedents_json TEXT, precedents_fingerprint TEXT
 );
 CREATE TABLE IF NOT EXISTS documents (
   id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
   filename TEXT NOT NULL, stored_name TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'unknown',
   page_count INTEGER NOT NULL DEFAULT 0, sha256 TEXT NOT NULL, status TEXT NOT NULL,
-  created_at TEXT NOT NULL, UNIQUE(case_id, sha256)
+  role TEXT NOT NULL DEFAULT 'supporting_record', created_at TEXT NOT NULL, UNIQUE(case_id, sha256)
 );
 CREATE TABLE IF NOT EXISTS pages (
   id TEXT PRIMARY KEY, case_id TEXT NOT NULL, document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
@@ -58,12 +60,26 @@ CREATE TABLE IF NOT EXISTS audits (
   id INTEGER PRIMARY KEY AUTOINCREMENT, case_id TEXT, event TEXT NOT NULL,
   metadata_json TEXT NOT NULL, created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS judgments (
+  id TEXT PRIMARY KEY, title TEXT NOT NULL, court TEXT NOT NULL DEFAULT '', judgment_year TEXT NOT NULL DEFAULT '',
+  filename TEXT NOT NULL, stored_path TEXT NOT NULL, page_count INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS judgment_chunks (
+  id TEXT PRIMARY KEY, judgment_id TEXT NOT NULL REFERENCES judgments(id) ON DELETE CASCADE,
+  page_number INTEGER NOT NULL, text TEXT NOT NULL, normalized_text TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS translation_cache (
+  text_hash TEXT NOT NULL, target TEXT NOT NULL, source_text TEXT NOT NULL,
+  translated_text TEXT NOT NULL, created_at TEXT NOT NULL,
+  PRIMARY KEY(text_hash, target)
+);
 CREATE INDEX IF NOT EXISTS idx_documents_case ON documents(case_id);
 CREATE INDEX IF NOT EXISTS idx_pages_case ON pages(case_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_case ON chunks(case_id);
 CREATE INDEX IF NOT EXISTS idx_objects_case ON objects(case_id);
 CREATE INDEX IF NOT EXISTS idx_relations_case ON relations(case_id);
 CREATE INDEX IF NOT EXISTS idx_findings_case ON findings(case_id);
+CREATE INDEX IF NOT EXISTS idx_judgment_chunks_judgment ON judgment_chunks(judgment_id);
 """
 
 
@@ -79,6 +95,18 @@ class Database:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             connection.executescript(SCHEMA)
+            columns = {row[1] for row in connection.execute("PRAGMA table_info(documents)").fetchall()}
+            if "role" not in columns:
+                connection.execute("ALTER TABLE documents ADD COLUMN role TEXT NOT NULL DEFAULT 'supporting_record'")
+            case_columns = {row[1] for row in connection.execute("PRAGMA table_info(cases)").fetchall()}
+            if "summary_json" not in case_columns:
+                connection.execute("ALTER TABLE cases ADD COLUMN summary_json TEXT")
+            if "summary_fingerprint" not in case_columns:
+                connection.execute("ALTER TABLE cases ADD COLUMN summary_fingerprint TEXT")
+            if "precedents_json" not in case_columns:
+                connection.execute("ALTER TABLE cases ADD COLUMN precedents_json TEXT")
+            if "precedents_fingerprint" not in case_columns:
+                connection.execute("ALTER TABLE cases ADD COLUMN precedents_fingerprint TEXT")
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:

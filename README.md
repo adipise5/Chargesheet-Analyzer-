@@ -1,6 +1,8 @@
-# Gujarat Police Chargesheet Intelligence — Deliverable 1
+# Gujarat Police Chargesheet Intelligence — Deliverables 1–2
 
 An offline-first investigation workstation for Gujarati/English chargesheet PDFs. It turns a source record into page-level text provenance, candidate entities and claims, an interactive claim-centric case graph, interpretable evidence profiles, a timeline, review queues, and citation-backed GraphRAG answers.
+
+Deliverable 2 adds explicit document roles, multi-document comparison, structured correction and IO-review actions, a Defense Assistant, completeness/format/chain-of-custody checks, and a local imported-judgment review workflow. See [Deliverable 2](docs/DELIVERABLE_2.md).
 
 This is decision support—not an autonomous guilt-determination system. It never produces guilt probabilities or guaranteed case outcomes.
 
@@ -47,6 +49,8 @@ Automatic model choice is `qwen3.5:4b` for 16 GB and `qwen3.5:9b` for 24/32 GB. 
 
 ## Install and run
 
+### macOS (the original Apple Silicon path)
+
 ```bash
 cd /Users/aditya/Desktop/SAT_del1
 make setup
@@ -68,6 +72,20 @@ make dev
 ```
 
 Open [http://127.0.0.1:5173](http://127.0.0.1:5173). The API reference is [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+### Windows
+
+Windows uses the same local-only architecture, but its setup and launcher scripts are PowerShell equivalents so the macOS scripts remain unchanged. Install Python 3.11+ and Node.js 20+, then run from PowerShell:
+
+```powershell
+.\scripts\setup_windows.ps1
+.\scripts\check_windows.ps1
+.\scripts\run_all.ps1
+```
+
+Open `http://127.0.0.1:5173`; the API reference is at `http://127.0.0.1:8000/docs`. To run validation, use `.\scripts\test_windows.ps1`.
+
+Tesseract with `guj` and `eng` language packs is needed for scanned documents. Ollama plus `qwen3.5:4b` and `bge-m3` enables model-backed Q&A and semantic retrieval; without it, the demo and extractive Q&A fallback remain available.
 
 ## Demo
 
